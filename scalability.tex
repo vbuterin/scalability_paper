@@ -489,6 +489,12 @@ The second is to turn the escalating fallback game into a decentralized oracle s
 
 There are two approaches to securing decentralized oracle schemes. One is the set of strategies involving Sztorcian counter-coordination, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
 
+\begin{center}
+\includegraphics[width=165pt]{schellingcoin_payoff1.png}
+\includegraphics[width=165pt]{schellingcoin_payoff2.png}
+\end{center}
+
+
 This approach accepts that attackers with a budget even larger than the size of everyone's security deposits will be able to cause everyone to flip to voting incorrectly as an equilibrium, but advocates note that attackers that large will also be able to arbitrarily disrupt the underlying blockchain consensus anyway.
 
 The second approach is to fall back to ``subjective resolution'': if, during the last round, the majority of voters vote incorrectly, then we consider that super-block to be invalid, and the community simply coordinates on a fork to a version of the header chain which contains the honest validators. On the interface level, this would be done by making it very easy for users to switch to a different fork on their client, ideally by simply putting in a hash. This reliance on human judgement at the last level makes the difficulty of an ``equilibrium flip'' essentially infinite, instead requiring the attacker to bribe everyone outright, but because the process only happens at the last step of a fallback game under normal circumstances users will not be bothered by need to make any manual fork swiches at all; like nuclear deterrence, the point of the scheme is to threaten to be used, not to actually be used. In either case, however, one can see that an attacker that can overcome the final-round vote will also be able to overcome the underlying non-scalable blockchain consensus at equal cost, and so scalability does not introduce additional risks.

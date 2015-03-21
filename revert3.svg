@@ -14,7 +14,10 @@
    id="svg3286"
    version="1.1"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="revert3.svg">
+   sodipodi:docname="revert3.svg"
+   inkscape:export-filename="/home/vub/scalability_paper/revert3.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs3288" />
   <sodipodi:namedview
@@ -25,8 +28,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="438.6937"
-     inkscape:cy="133.39726"
+     inkscape:cx="210.12227"
+     inkscape:cy="-62.864182"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -47,7 +50,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -111,8 +114,8 @@
        id="path3316-2-9"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 642.95192,702.66027 0.16757,-98.4533"
+       style="fill:none;stroke:#000000;stroke-width:1.99573481;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 642.94979,702.6624 0.17183,-95.60042"
        id="path3316-2-5-7"
        inkscape:connector-curvature="0" />
     <path
@@ -136,8 +139,8 @@
        id="path3316-2-5-4"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.99124551;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 621.16184,605.66464 0.17633,-92.74777"
+       style="fill:none;stroke:#000000;stroke-width:1.99351931;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 621.16298,607.09207 0.17405,-94.17406"
        id="path3316-2-4-7"
        inkscape:connector-curvature="0" />
     <path

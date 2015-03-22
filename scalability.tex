@@ -87,11 +87,11 @@ Two transactions or lists of transactions $T_1$, $T_2$ are \emph{commutative in 
 \end{defn}
 
 \begin{defn}[Compatibility]
-Two transactions or lists of transactions $T_1$, $T_2$ are \emph{compatible in the context of $\sigma$} if $\sigma + T_1 + T_2 = \varnothing$ and $\sigma + T_2 + T_1 \ \varnothing$ if and only if either $\sigma + T_1 = \varnothing$ or $\sigma + T_2 = \varnothing$.
+Two transactions or lists of transactions $T_1$, $T_2$ are \emph{compatible in the context of $\sigma$} if $\sigma + T_1 + T_2 = \varnothing$ and $\sigma + T_2 + T_1 = \varnothing$ if and only if either $\sigma + T_1 = \varnothing$ or $\sigma + T_2 = \varnothing$.
 \end{defn}
 
 \begin{defn}[Partitioning scheme]
-A \emph{partitioning scheme} if a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 ... \sigma_n)$ for a fixed $n$. For simplicity, we use $\sigma[i] = P(\sigma)[i]$, and if S is a set, $\sigma[S] = \{i: P(\sigma)[i] \; for \; i \in S\}$. An individual value $\sigma[i]$ will be called a \emph{subspace}, and a value $i$ will be called a \emph{subspace index}.
+A \emph{partitioning scheme} is a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 ... \sigma_n)$ for a fixed $n$. For simplicity, we use $\sigma[i] = P(\sigma)[i]$, and if S is a set, $\sigma[S] = \{i: P(\sigma)[i] \; for \; i \in S\}$. An individual value $\sigma[i]$ will be called a \emph{subspace}, and a value $i$ will be called a \emph{subspace index}.
 \end{defn}
 
 \begin{defn}[Affected area]
@@ -353,7 +353,7 @@ SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a forma
 More advanced versions of Schelling-coin include a version augmented with Sztorcian counter-coordination \cite{sztorc}, which massively increases the size of the economic incentive required to effect an equilibrium flip, and a version in which substantial disagreements lead to the blockchain simply forking, leaving users to choose which version they follow (the economic argument is that users will prefer the version which contains more honest voters, and users that don't have access to the subjective information about the specific fact in question can figure out which version is ``correct'' by looking at the market price of the tokens associated with each version). 
 \end{exmp}
 
-\chapter{A Byzantine-fault-tolerant Scalable Conensus Algorithm}
+\chapter{A Byzantine-fault-tolerant Scalable Consensus Algorithm}
 
 Suppose a construction where the state is partitioned into $n = O(N^{1-\epsilon})$ sections (``substates''), and each substate is itself partitioned into very small parts (eg. one per account). We define three ``levels'' of objects:
 
@@ -452,7 +452,7 @@ validating the header chain
 validating the blocks
 \end{itemize}
 
-For the header chain, note that the size of each super-block is $n+k_1b+k_2$, where $n$ is the size of the state partition (as each index can be included as an observed area at most once), $b$ is the number of blocks, $k$ is a constant representing the size of $H(T) + H(D) + [s_1 ... s_m]$, and $k_2$ is a constant for miscellaneous super-block data (eg. validators entering and leaving, the entropy source, timestamp, previous block hash). We can require $n \in O(N^{1-\epsilon})$ and $b \le n$ so $b \in O(N^{1-\epsilon})$. One can come up with an algorithm to evaluate the top-level validity of the block in less than $O(N)$ time; the toughest part may be showing that observed areas do not intersect as a set non-intersection algorithm can take $O(k*log(k))$ time for $k$ items and $O(N^{1-\epsilon} * log(N^{1-\epsilon})) < O(N)$, and everythin else should simply take $O(N^{1-\epsilon})$ time.
+For the header chain, note that the size of each super-block is $n+k_1b+k_2$, where $n$ is the size of the state partition (as each index can be included as an observed area at most once), $b$ is the number of blocks, $k$ is a constant representing the size of $H(T) + H(D) + [s_1 ... s_m]$, and $k_2$ is a constant for miscellaneous super-block data (eg. validators entering and leaving, the entropy source, timestamp, previous block hash). We can require $n \in O(N^{1-\epsilon})$ and $b \le n$ so $b \in O(N^{1-\epsilon})$. One can come up with an algorithm to evaluate the top-level validity of the block in less than $O(N)$ time; the toughest part may be showing that observed areas do not intersect as a set non-intersection algorithm can take $O(k*log(k))$ time for $k$ items and $O(N^{1-\epsilon} * log(N^{1-\epsilon})) < O(N)$, and everything else should simply take $O(N^{1-\epsilon})$ time.
 
 For block validation, suppose that there are $v \in O(N^{1-\epsilon})$ validators. Each super-block may contain a maximum of $n$ blocks, and $n \in O(N^{1-\epsilon})$. Thus, in total, validators must process at most $m*n$ blocks (as each block must be processed by $m$ validators), and so each validator will on average end up processing $m*m/v \in O(1)$ blocks. If each block has $O(N^{1-\epsilon})$ transactions, then the computational load of this is $m * O(N^{1-\epsilon}) < O(N)$. Hence, the total load of a validator is less than $O(N)$ while the network processes a total of $O(N^{2-\epsilon})$ transactions.
 
@@ -483,7 +483,7 @@ The more difficult challenge in going from a statistical Byzantine fault toleran
 
 Additionally, note that unless zk-SNARK protocols are used, if data is not available there is no way to check validity or prove invalidity, and so once challengers get tired of losing security deposits attackers will be able to get invalid blocks included in the blockchain as well (zk-SNARKs in the header may be used to make that attack impossible, but still cannot by themselves prove availability). Hence, what we appear to need is a way of actually cryptographically, and not just cryptoeconomically, proving that data is available at a particular time.
 
-There third four major categories of solutions that we can use. The first is to simply give up on economic security, and rely on the scheme to be secure under a Byzantine-fault-tolerant model. We then ask validators to censor attempts to join the validator pool by parties that appear to be unreliable or likely to be malfeasant. In some cases, particularly regulated financial systems, such restrictions are necessary in any case and so we need to go no further. If we are trying to create a more open network, however, then such a solution is unsatisfactory, and so we arguably need not just Byzantine fault tolerance but also regulation via economic incentives.
+There are three major categories of solutions that we can use. The first is to simply give up on economic security, and rely on the scheme to be secure under a Byzantine-fault-tolerant model. We then ask validators to censor attempts to join the validator pool by parties that appear to be unreliable or likely to be malfeasant. In some cases, particularly regulated financial systems, such restrictions are necessary in any case and so we need to go no further. If we are trying to create a more open network, however, then such a solution is unsatisfactory, and so we arguably need not just Byzantine fault tolerance but also regulation via economic incentives.
 
 The second is to turn the escalating fallback game into a decentralized oracle scheme. Here, we note that the question that we need to vote on during the escalating fallback game is not whether the data \emph{currently is} available, but whether the data \emph{was} available. This is information that can be reasonably expected to be known by most validators, particularly since an attacker taking over $m$ validators is only realistically likely to happen if validators were ``bribed'' (or threatened), and for such a bribe to be effective it would need to be broadcasted to the public. However, it is not information that will be available to absolutely anyone validating the blockchain, particularly in the future. Hence, the ``final round'' of an escalating fallback game (ie. the round where \emph{all} validators participate) is an exactly identical scenario to that faced by decentralized oracle schemes.
 
@@ -519,7 +519,7 @@ $GDC(\sigma, \sigma_0, \beta) = \emptyset$ if $\sigma \in ANC(\sigma_0)$
 \item
 $GDC(\sigma_0, \sigma_0, \beta) = OBSERVED(\beta)$
 \item
-$GDC(\sigma + \beta, \sigma_0, \beta) = \bigcup_{\tau \in \beta: \exists i \in GDC(\sigma) \cap OBSERVED(\tau)} OBSERVED(\tau) \cup GDC(\sigma, \sigma_0, \beta)$
+$GDC(\sigma + \beta, \sigma_0, \beta) = {\tau \in \beta: \exists i \in GDC(\sigma) \cap OBSERVED(\tau)} \bigcup OBSERVED(\tau) \cup GDC(\sigma, \sigma_0, \beta)$
 \end{itemize}
 
 Assuming an invalid block $\beta$ with prior state $\sigma_{pre}$, and assuming the current state is $\sigma_f$, we use $GDC(\sigma_f, \sigma_{pre} + \beta, OBSERVED(\sigma_{pre}, \beta))$ to get the total set of substates to be reverted. Then, for each substate index $i$, we locate the state $\sigma_i$ such that $i \in GDC(\sigma_i + \beta, \sigma_{pre} + \beta, OBSERVED(\sigma_{pre}, \beta))$ but $i \notin GDC(\sigma_i, \sigma_{pre} + \beta, OBSERVED(\sigma_{pre}, \beta))$, and simply revert $\sigma'_f[i] \leftarrow \sigma_i[i]$, ie. revert every substate to just before the point where it got into the ``cone'' of potentially invalid blocks. This operation of reverting is to be considered a block and should look like a block, ie. the message calling for a revert should specify a $AN$ and $AP$ value where $AN$ is the set of state roots that are being reverted and $AP$ is the set of state roots that those substates are being reverted to, and all revert blocks in a given super-block should have areas disjoint with each other and with other blocks. Furthermore, and particularly importantly in a fallback game, revert blocks can themselves be reverted, and no special rules are required to handle this beyond the already specified semantics based on observed area.

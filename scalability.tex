@@ -519,7 +519,7 @@ $GDC(\sigma, \sigma_0, \beta) = \emptyset$ if $\sigma \in ANC(\sigma_0)$
 \item
 $GDC(\sigma_0, \sigma_0, \beta) = OBSERVED(\beta)$
 \item
-$GDC(\sigma + \beta, \sigma_0, \beta) = \bigcup_{\tau \in \beta: \exists i \in GDC(\sigma) \cap OBSERVED(\tau)} OBSERVED(\tau) \cup GDC(\sigma, \sigma_0, \beta)$
+$GDC(\sigma + \beta, \sigma_0, \beta) = {\tau \in \beta: \exists i \in GDC(\sigma) \cap OBSERVED(\tau)} \bigcup OBSERVED(\tau) \cup GDC(\sigma, \sigma_0, \beta)$
 \end{itemize}
 
 Assuming an invalid block $\beta$ with prior state $\sigma_{pre}$, and assuming the current state is $\sigma_f$, we use $GDC(\sigma_f, \sigma_{pre} + \beta, OBSERVED(\sigma_{pre}, \beta))$ to get the total set of substates to be reverted. Then, for each substate index $i$, we locate the state $\sigma_i$ such that $i \in GDC(\sigma_i + \beta, \sigma_{pre} + \beta, OBSERVED(\sigma_{pre}, \beta))$ but $i \notin GDC(\sigma_i, \sigma_{pre} + \beta, OBSERVED(\sigma_{pre}, \beta))$, and simply revert $\sigma'_f[i] \leftarrow \sigma_i[i]$, ie. revert every substate to just before the point where it got into the ``cone'' of potentially invalid blocks. This operation of reverting is to be considered a block and should look like a block, ie. the message calling for a revert should specify a $AN$ and $AP$ value where $AN$ is the set of state roots that are being reverted and $AP$ is the set of state roots that those substates are being reverted to, and all revert blocks in a given super-block should have areas disjoint with each other and with other blocks. Furthermore, and particularly importantly in a fallback game, revert blocks can themselves be reverted, and no special rules are required to handle this beyond the already specified semantics based on observed area.

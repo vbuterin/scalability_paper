@@ -54,7 +54,7 @@ A \emph{transaction} is a set of data. A transaction typically includes a crypto
 \end{defn}
 
 \begin{defn}[State Transition Function]
-A \emph{state transition function} is a function $APPLY(\sigma, \tau) \rightarrow \sigma \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}. A \emph{safe state transition function} $SAFE(APPLY) = APPLY'$ is defined by $APPLY'(\sigma, \tau) = \{\sigma \; if \; APPLY(\sigma, \tau) = \varnothing \; else \; APPLY(\sigma, \tau)\}$.
+A \emph{state transition function} is a function $APPLY(\sigma, \tau) \rightarrow \sigma' \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}. A \emph{safe state transition function} $SAFE(APPLY) = APPLY'$ is defined by $APPLY'(\sigma, \tau) = \{\sigma \; if \; APPLY(\sigma, \tau) = \varnothing \; else \; APPLY(\sigma, \tau)\}$.
 \end{defn}
 
 For simplicity, we use the following notation:
@@ -64,7 +64,7 @@ For simplicity, we use the following notation:
 $APPLY(\sigma, \tau) \rightarrow \sigma'$ becomes $\sigma + \tau = \sigma'$
 \item
 $SAFE(APPLY)(\sigma, \tau) \rightarrow \sigma'$ becomes $\sigma {++} \tau = \sigma'$
-\item  
+\item
 Given an ordered list $T = [\tau_1, \tau_2, \tau_3...]$ and a state $\sigma$, we define $\sigma + T = \sigma + \tau_1 + \tau_2 + ...$
 \item
 Given an ordered list $T = [\tau_1, \tau_2, \tau_3...]$ and a state $\sigma$, we define $\sigma_0 = \sigma$ and $\sigma_{i+1} = \sigma_i ++ \tau_{i+1}$. We denote with $T \setminus \sigma$ the ordered list of all $\tau_i \in T$ such that $\sigma_i + \tau_i \ne \varnothing$.
@@ -143,7 +143,7 @@ The \emph{validators} in a cryptoeconomic state machine are the users that are i
 \end{defn}
 
 \begin{defn}[Blockchain]
-A \emph{blockchain} is a tuple $(G, B)$ where $G$ is a \emph{genesis state} and $B$ is an ordered list of blocks. Cryptographic references (ie. hashes) are typically used to maintain the integrity of a blockchain and allow it to be securely represented only by its final block. A blockchain is valid if $B \setminus G = B$ (ie. all blocks are valid in their respective contexts if applied to $G$ sequentially). 
+A \emph{blockchain} is a tuple $(G, B)$ where $G$ is a \emph{genesis state} and $B$ is an ordered list of blocks. Cryptographic references (ie. hashes) are typically used to maintain the integrity of a blockchain and allow it to be securely represented only by its final block. A blockchain is valid if $B \setminus G = B$ (ie. all blocks are valid in their respective contexts if applied to $G$ sequentially).
 \end{defn}
 
 \begin{defn}[Parent]
@@ -155,7 +155,7 @@ The set of \emph{ancestors} of a state $\sigma$ is recursively defined via $ANC(
 \end{defn}
 
 \begin{defn}[Weight function]
-A \emph{weight function} is a function $W(u, \sigma)$ on the set of users $u_1 ... u_n$ (each of which is assumed to have a private and public key) in the context of a state $\sigma$, such that for all users in the network, $\sum_{i=0}^n W(u_i, \sigma) = 1$. ``$k$ of all weight'' will be used to denote the idea of a subset of users such that the sum of their weights is $k$. 
+A \emph{weight function} is a function $W(u, \sigma)$ on the set of users $u_1 ... u_n$ (each of which is assumed to have a private and public key) in the context of a state $\sigma$, such that for all users in the network, $\sum_{i=0}^n W(u_i, \sigma) = 1$. ``$k$ of all weight'' will be used to denote the idea of a subset of users such that the sum of their weights is $k$.
 \end{defn}
 
 \begin{note}
@@ -167,7 +167,7 @@ A \emph{state root function} is a collision-proof preimage-proof function $R(\si
 \end{defn}
 
 \begin{defn}[Partition-friendliness]
-A state root function is partition-friendly with respect to a particular partitioning scheme if one can compute $R(\sigma)$ by knowing only $R(\sigma[0]), R(\sigma[1]) ... R(\sigma[n])$. 
+A state root function is partition-friendly with respect to a particular partitioning scheme if one can compute $R(\sigma)$ by knowing only $R(\sigma[0]), R(\sigma[1]) ... R(\sigma[n])$.
 \end{defn}
 
 \begin{assm}
@@ -311,7 +311,7 @@ The cryptoeconomically secure entropy source used in NXT\cite{nxtinside} is defi
 \begin{itemize}
 \item
 $E(G) = 0$
-\item 
+\item
 $E(\sigma + \beta) = sha256(E(\sigma) + V(\beta))$ where $V(\beta)$ is the block proposer of $\beta$.
 \end{itemize}
 The only way to manipulate the result is for the block proposer to disappear, leading to another proposer taking over. However, this action is costly for the proposer as the proposer loses a block reward. Note that the optimal strategy is to disappear with probability $0 < q <= 1$ only when the predicate will be unsatisfied with the proposer participating but will be satisfied with the next proposer partipating; if a predicate has probability $p$ this entails disappearing $p * (1-p) * q$ of the time, meaning that the predicate will be satisfied $p + p * (1-p) * q$ of the time instead of $p$ of the time, a probability increment of $p * (1-p) * q$ at the cost of $p * (1-p) * q * R$ if $R$ is the signing reward. Hence, the cost-to-influence ratio $b$ is exactly equal to $R$.
@@ -350,7 +350,7 @@ A participant whose vote does not align with the majority vote receives a reward
 \end{itemize}
 SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a formal definition of economic security it cannot be viewed as having any security margin at all, though in practice it is likely to work reasonably well due to the difficulty of coordination problems. An attacker with a budget greater than $P$ and the ability to credibly commit to to providing a bribe under certain conditions in the future can, assuming rationality of the participants, effect an equilibrium flip toward a wrong answer at no cost \cite{pepsilon}.
 
-More advanced versions of Schelling-coin include a version augmented with Sztorcian counter-coordination \cite{sztorc}, which massively increases the size of the economic incentive required to effect an equilibrium flip, and a version in which substantial disagreements lead to the blockchain simply forking, leaving users to choose which version they follow (the economic argument is that users will prefer the version which contains more honest voters, and users that don't have access to the subjective information about the specific fact in question can figure out which version is ``correct'' by looking at the market price of the tokens associated with each version). 
+More advanced versions of Schelling-coin include a version augmented with Sztorcian counter-coordination \cite{sztorc}, which massively increases the size of the economic incentive required to effect an equilibrium flip, and a version in which substantial disagreements lead to the blockchain simply forking, leaving users to choose which version they follow (the economic argument is that users will prefer the version which contains more honest voters, and users that don't have access to the subjective information about the specific fact in question can figure out which version is ``correct'' by looking at the market price of the tokens associated with each version).
 \end{exmp}
 
 \chapter{A Byzantine-fault-tolerant Scalable Consensus Algorithm}
@@ -529,7 +529,7 @@ The state obtained after reverting as above is valid.
 \end{lem}
 
 \begin{proof}
-For the sake of simplicity, suppose that every super-block contains a block modifying every substate; if not, then we assume a phantom ``null block'' for each unaffected substate $i$ with $AN = AP = \{i: R(\sigma[i])\}$. First, note that the area of the ``dependency cone'' during each super-block corresponds exactly to the combined area of some set of blocks; it cannot partially include any block because the definition states that if the area of a block is partially included it must be fully included, and it cannot include area unoccupied by blocks because of our siplifying assumption. Then, for each super-block $\beta$, let $D(\beta)$ be the set of blocks in the dependency cone of the post-state of that block in the blockchain, and $U(\beta)$ be the set of blocks not in the dependency cone. If $\sigma_f = \sigma_{pre} + \beta_1 + \beta_2 + ...$, the post revert state $\sigma'_f$ will correspond exactly to $\sigma_{pre} + U(\beta_1) + U(\beta_2) + ...$. 
+For the sake of simplicity, suppose that every super-block contains a block modifying every substate; if not, then we assume a phantom ``null block'' for each unaffected substate $i$ with $AN = AP = \{i: R(\sigma[i])\}$. First, note that the area of the ``dependency cone'' during each super-block corresponds exactly to the combined area of some set of blocks; it cannot partially include any block because the definition states that if the area of a block is partially included it must be fully included, and it cannot include area unoccupied by blocks because of our siplifying assumption. Then, for each super-block $\beta$, let $D(\beta)$ be the set of blocks in the dependency cone of the post-state of that block in the blockchain, and $U(\beta)$ be the set of blocks not in the dependency cone. If $\sigma_f = \sigma_{pre} + \beta_1 + \beta_2 + ...$, the post revert state $\sigma'_f$ will correspond exactly to $\sigma_{pre} + U(\beta_1) + U(\beta_2) + ...$.
 
 We will show why this is true by illustration. Consider a sequence of states with a set of blocks updating the state during each super-block:
 

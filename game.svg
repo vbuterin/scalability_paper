@@ -236,7 +236,7 @@
          style="font-size:18px;stroke-width:2">(-100, 10)</flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot3417-5-9-7"
-       style="font-size:15px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;stroke-width:2"
+       style="font-size:15px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        transform="translate(705.9293,8.0238075)"><flowRegion
          id="flowRegion3419-1-6-2"><rect
            id="rect3421-7-7-6"
@@ -244,9 +244,9 @@
            height="97.14286"
            x="-65.714287"
            y="602.36218"
-           style="font-size:15px;stroke-width:2" /></flowRegion><flowPara
+           style="font-size:15px" /></flowRegion><flowPara
          id="flowPara3423-3-4-5"
-         style="font-size:20px;stroke-width:2">(1, -1)</flowPara></flowRoot>    <path
+         style="font-size:20px">(1, -δ)</flowPara></flowRoot>    <path
        sodipodi:type="arc"
        style="fill:none;stroke:#000000;stroke-width:3.14099991"
        id="path2985-9-2-4-5-4"

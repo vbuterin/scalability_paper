@@ -307,7 +307,7 @@ The above algorithm is only one of a class of algorithms that try to derive entr
 \end{note}
 
 \begin{note}
-The above algorithm is NOT \emph{downward-uninfluenceable}. If there is a predicate $P$ with low probability, then one can influence its probability down to $P * w_a$ by simply bribing all validators who would have created a block that changed the entropy value to something satisfying $P$ to instead sit their turn out and let the next validator make a block, almost certainly not triggering $P$. The $w_a$ multiplier comes from the fact that we are assuming a subset of validators that cannot be bribed. However, for predicates with medium probability, one can derive a certain degree of resistance to downward influence simply by applying the upward-uninfluenceability guarantees to $\negP$.
+The above algorithm is NOT \emph{downward-uninfluenceable}. If there is a predicate $P$ with low probability, then one can influence its probability down to $P * w_a$ by simply bribing all validators who would have created a block that changed the entropy value to something satisfying $P$ to instead sit their turn out and let the next validator make a block, almost certainly not triggering $P$. The $w_a$ multiplier comes from the fact that we are assuming a subset of validators that cannot be bribed. However, for predicates with medium probability, one can derive a certain degree of resistance to downward influence simply by applying the upward-uninfluenceability guarantees to $\neg P$.
 \end{note}
 
 \begin{defn}[zk-SNARK scheme]
@@ -384,7 +384,7 @@ $m$ - the number of validators in a block
 $w_a$ - the portion of weight controlled by altruists
 \end{itemize}
 
-$\tau$ will represent transactions, $\beta$ will represent blocks and block headers depending on context, and $\Beta$ will represent ``super-blocks''.
+$\tau$ will represent transactions, $\beta$ will represent blocks and block headers depending on context, and $B$ will represent ``super-blocks''.
 
 \chapter{A Byzantine-fault-tolerant Scalable Consensus Algorithm}
 
@@ -617,7 +617,7 @@ For simplicity, we recommend not applying either of the more advanced strategies
 
 \chapter{Reverting}
 
-One important issue that was not raised in the previous sections is: what happens if, for some period of time, an invalid block does get in? Assuming an arbitrary state transition function, we cannot assume that the harm that can be done or illicit profit earned by manipulating even the tiniest part of the state in any statically analyzable way is bounded; hence, we must revert all failures as quickly as possible at all costs. To do this with minimal disruption, we propose the following mechanism. When an invalid block is found and agreed upon, construct a ``dependency cone'' of all substates that could have been affected by that block, and revert each substate to a prior ``safe'' state. The algorithm for this relies on a primitive we will call $GDC$ (``get dependency cone''), which takes a target state $\sigma$, an errant block $\beta_0$ inside a super-block $\Beta$ and the post-super-block state $\sigma_0 = \sigma_{-1} + \Beta$, and outputs a partial mapping of index to substate.
+One important issue that was not raised in the previous sections is: what happens if, for some period of time, an invalid block does get in? Assuming an arbitrary state transition function, we cannot assume that the harm that can be done or illicit profit earned by manipulating even the tiniest part of the state in any statically analyzable way is bounded; hence, we must revert all failures as quickly as possible at all costs. To do this with minimal disruption, we propose the following mechanism. When an invalid block is found and agreed upon, construct a ``dependency cone'' of all substates that could have been affected by that block, and revert each substate to a prior ``safe'' state. The algorithm for this relies on a primitive we will call $GDC$ (``get dependency cone''), which takes a target state $\sigma$, an errant block $\beta_0$ inside a super-block $B$ and the post-super-block state $\sigma_0 = \sigma_{-1} + B$, and outputs a partial mapping of index to substate.
 
 \begin{itemize}
 \item
@@ -625,10 +625,10 @@ $GDC(\sigma, \sigma_0, \beta_0) = \emptyset$ if $\sigma \in ANC(\sigma_0)$
 \item
 $GDC(\sigma_0, \sigma_0, \beta_0) = OBSERVED(\sigma_0, \beta_0)$
 \item
-$GDC(\sigma + \Beta, \sigma_0, \beta_0) = GDC(\sigma, \sigma_0, \beta_0) \cup \bigcup_{\beta \in \Beta: GDC(\sigma) \cap OBSERVED(\beta) \ne \emptyset} OBSERVED(\sigma, \beta)$
+$GDC(\sigma + B, \sigma_0, \beta_0) = GDC(\sigma, \sigma_0, \beta_0) \cup \bigcup_{\beta \in B: GDC(\sigma) \cap OBSERVED(\beta) \ne \emptyset} OBSERVED(\sigma, \beta)$
 \end{itemize}
 
-Assuming an invalid block $\beta_0$ inside a super-block $\Beta$ with prior state $\sigma_{pre}$, and assuming the current state is $\sigma_f$, we use $GDC(\sigma_f, \sigma_{pre} + \Beta, OBSERVED(\sigma_{pre}, \beta_0))$ to get the total set of substates to be reverted. Then, for each substate index $i$, we locate the state $\sigma_i$ such that $i \in GDC(\sigma_i + \Beta, \sigma_{pre} + \Beta, OBSERVED(\sigma_{pre}, \beta_0))$ but $i \notin GDC(\sigma_i, \sigma_{pre} + \Beta, OBSERVED(\sigma_{pre}, \beta_0))$, and simply revert $\sigma'_f[i] \leftarrow \sigma_i[i]$, ie. revert every substate to just before the point where it got into the ``cone'' of potentially invalid blocks.
+Assuming an invalid block $\beta_0$ inside a super-block $B$ with prior state $\sigma_{pre}$, and assuming the current state is $\sigma_f$, we use $GDC(\sigma_f, \sigma_{pre} + B, OBSERVED(\sigma_{pre}, \beta_0))$ to get the total set of substates to be reverted. Then, for each substate index $i$, we locate the state $\sigma_i$ such that $i \in GDC(\sigma_i + B, \sigma_{pre} + B, OBSERVED(\sigma_{pre}, \beta_0))$ but $i \notin GDC(\sigma_i, \sigma_{pre} + B, OBSERVED(\sigma_{pre}, \beta_0))$, and simply revert $\sigma'_f[i] \leftarrow \sigma_i[i]$, ie. revert every substate to just before the point where it got into the ``cone'' of potentially invalid blocks.
 
 \begin{lem}
 The state obtained after reverting as above is valid.

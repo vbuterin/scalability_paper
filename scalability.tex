@@ -201,6 +201,14 @@ A \emph{cryptoeconomic state machine} is a tuple $(G, APPLY, P, F)$ where $G$ is
 \end{defn}
 
 \begin{note}
+The Byzantine-fault-tolerance requirement in place of a fixed quantity of weight controlled by altruists can be viewed an application of the Byzantine-Altruist-Rational model by Aiyer et al\cite{bar}; however, we depart from Aiyer et al's model in that in our case we allow rational nodes to be bribed by attackers with the total bribe having a particular maximum size.
+\end{note}
+
+\begin{note}
+A cryptoeconomic state machine requires either a Byzantine-fault-tolerant consensus or, as in the case of proof of work\cite{amiller}, a reasonably close approximation thereof. However, since our paper generally assumes the existence of non-scalable cryptoeconomic state machines as a given, we will not spend too much time discussing Byzantine fault-tolerant consensus theory, only seeking to show how the scalable consensus problem can be reduced to the non-scalable case.
+\end{note}
+
+\begin{note}
 The definition of economic security used above is taken from Vlad Zamfir's model of a ``bribing attacker'' \cite{zamfir}. Bribes do not need to represent literal monetary or other bribes; they can represent blackmail, threats, governmental influence, and even arbitrary personal tastes and prejudices; the intent is to model incentives outside the system by making the assumption that the size of these incentives is bounded by $b * L$. Complete security (ie. economic security under Byzantine faults), rather than simply economic security, is required because, in practice, there do also exist validators that are so irrational that they would pass on even a trillion-dollar incentive in order to stray from the protocol in some way, and it is sometimes possible to inflict extremely high disincentives against specific agents at only medium cost, eg. by means of violence.
 \end{note}
 
@@ -760,7 +768,7 @@ For the fifth, an ideal goal would be to have a blockchain design which allows u
 
 Finally, there is plenty of room for optimization in strategies, figuring out how validators can self-organize in order to maximize the expressivity of the state transition function in practice. The ideal goal is to present an interface to developers that ``just works'', providing a set of highly robust abstractions that achieve strong security bounds, freeing developers of the need to think about the underlying architecture, math and economics of the platform unless absolutely necessary. But this problem can be solved much later than the others, and solutions can much more easily continue to be iterated even after the underlying blockchain protocol is developed.
 
-\begin{thebibliography}{29}
+\begin{thebibliography}{31}
 
 \bibitem{mmpetertodd}
     Peter Todd on merge-mining, Dec 2013: \url{http://sourceforge.net/p/bitcoin/mailman/message/31796158/}
@@ -785,6 +793,12 @@ Finally, there is plenty of room for optimization in strategies, figuring out ho
 
 \bibitem{piketty}
     Thomas Piketty, Capital in the 21st Century: \url{http://www.amazon.com/Capital-Twenty-First-Century-Thomas-Piketty/dp/1491534656}
+
+\bibitem{bar}
+    BAR Fault Tolerance for Cooperative Services, Amitanand S. Aiyer et al: \url{http://cs.brown.edu/courses/csci2950-g/papers/bar.pdf}
+
+\bibitem{amiller}
+    Anonymous Byzantine Consensus from Moderately-Hard Puzzles: A Model for Bitcoin, Andrew Miller, Joseph J LaViola Jr: \url{https://socrates1024.s3.amazonaws.com/consensus.pdf}
 
 \bibitem{merkle}
     Merkle trees (Wikipedia): \url{http://en.wikipedia.org/wiki/Merkle_tree}

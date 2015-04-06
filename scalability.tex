@@ -55,7 +55,7 @@ A \emph{transaction} is a piece of data. A transaction typically includes a cryp
 \end{defn}
 
 \begin{defn}[State Transition Function]
-A \emph{state transition function} is a function $APPLY(\sigma, \tau) \rightarrow \sigma \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}. A \emph{safe state transition function} $SAFE(APPLY) = APPLY'$ is defined by $APPLY'(\sigma, \tau) = \{\sigma \; if \; APPLY(\sigma, \tau) = \varnothing \; else \; APPLY(\sigma, \tau)\}$.
+A \emph{state transition function} is a function $APPLY(\sigma, \tau) \rightarrow \sigma' \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}. A \emph{safe state transition function} $SAFE(APPLY) = APPLY'$ is defined by $APPLY'(\sigma, \tau) = \{\sigma \; if \; APPLY(\sigma, \tau) = \varnothing \; else \; APPLY(\sigma, \tau)\}$.
 \end{defn}
 
 For simplicity, we use the following notation:
@@ -96,7 +96,7 @@ The \emph{affected area} of a transaction (or transaction list) $\tau$ in the co
 \end{defn}
 
 \begin{defn}[Observed area]
-The \emph{observed area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $OBSERVED(\sigma, \tau)$) is defined as the set of indices $S$ such that for any $\psi$ where $\psi[S] = \sigma[S]$, and $\psi' = \psi + \tau$, we have $\psi'[S] = \sigma'[S]$ and $\psi'[i] = \psi[i]$ for $i \notin S$. 
+The \emph{observed area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $OBSERVED(\sigma, \tau)$) is defined as the smallest set of indices $S$ such that for any $\psi$ where $\psi[S] = \sigma[S]$ and $\psi' = \psi + \tau$, we have $\psi'[S] = \sigma'[S]$ and $\psi'[i] = \psi[i]$ for $i \notin S$. 
 \end{defn}
 
 \begin{note}
@@ -180,7 +180,7 @@ This follows from our assumption of a working distributed hash table, elaborated
 \end{note}
 
 \begin{defn}[Cryptoeconomic State Machine]
-A \emph{cryptoeconomic state machine} is a tuple $(G, APPLY, P, F)$ where $G$ is a \emph{genesis state}, $APPLY$ is a state transition function and $P$ is a process for determining the next block. The cryptoeconomic state machine maintains a ``current state'' $\sigma$, repeatedly employs $P$ (by incentivizing validators to carry out their individual roles in P) in order to determine a ``next block'' $\beta$, and then sets $\sigma \leftarrow \sigma + \beta$. $F$ is a process which can be used by a user to determine a recent value of $\sigma$. Desired properties for a cryptoeconomic state machine are:
+A \emph{cryptoeconomic state machine} is a tuple $(G, APPLY, P, F)$ where $G$ is a \emph{genesis state}, $APPLY$ is a block-level state transition function and $P$ is a process for determining the next block. The cryptoeconomic state machine maintains a ``current state'' $\sigma$, repeatedly employs $P$ (by incentivizing validators to carry out their individual roles in P) in order to determine a ``next block'' $\beta$, and then sets $\sigma \leftarrow \sigma + \beta$. $F$ is a process which can be used by a user to determine a recent value of $\sigma$. Desired properties for a cryptoeconomic state machine are:
 
 \begin{itemize}
 \item
@@ -384,7 +384,7 @@ $N$ - the maximum computational power of a node
 \item
 $L$ - the level of economic activity in the network
 \item
-$m$ - the number of validators in a block
+$m$ - the size of the randomly selected pool of validators that need to validate each block (usually 50 or 135)
 \item
 $w_a$ - the portion of weight controlled by altruists
 \end{itemize}
@@ -431,7 +431,7 @@ We use any non-scalable consensus algorithm (eg. Tendermint\cite{tendermint}) fo
 \item
 For all $i \in AP$, $\psi[i] = AP[i]$.
 \item
-For at least $\frac{2m}{3}$ values of $i \in [m]$, $s[i]$ is a valid signature when checked against $SAMPLE(W, E(\sigma) + A, m)[i]$ where $W(\sigma, u_i) = \frac{1}{|V(\sigma)|} \; if \; u_i \in V(\sigma) \; else \; 0$ and $A$ is the address or public key of the block proposer.
+For at least $\frac{2m}{3}$ values of $i \in [m]$, $s[i]$ is a valid signature when checked against $SAMPLE(W, E(\sigma) + A, m)[i]$ where $W(\sigma, u_i) = \frac{1}{|V(\sigma)|} \; if \; u_i \in V(\sigma) \; else \; 0$ and $A$ is the address or public key of the block proposer (ie. the block has at least $\frac{2m}{3}$ valid signatures out of a randomly selected pool of $m$).
 \end{itemize}
 
 If $\beta$ is valid, we set $\psi'$ by:
@@ -466,7 +466,7 @@ Now, suppose that one $\beta_i$ does not satisfy the second-level criteria. Then
 
 Hence, we know that the resulting $\psi'$ will represent a state which is \emph{valid}, in the sense that it can be described as a series of transactions applied to the genesis. This is the validity criterion that we will repeatedly use in order to prove that validity is preserved by other mechanisms that we introduce such as revert mechanics.
 
-Because a sampling scheme is inherently probabilistic, it is theoretically prone to failure, and so we will precisely calculate the probability that the protocol will fail. Assuming a 96-bit security margin, we can consider a probability negligible if the average time between failures is longer than the time it takes for an attacker to make $2^{96}$ computations. If we assume that the cryptoeconomically secure entropy source updates every super-block, and a super-block comes every 20 seconds, then one can reasonably expect a hostile computing cluster to be able to perform $2^{48}$ work within that time, so we will target a failure probability of $2^{-48}$ (this implies roughly one failure per 445979 years of being under attack). We can determine the failure probability with the following combinatoric formula:
+Because a sampling scheme is inherently probabilistic, it is theoretically prone to failure, and so we will precisely calculate the probability that the protocol will fail. Assuming a 96-bit security margin, we can consider a probability negligible if the average time between failures is longer than the time it takes for an attacker to make $2^{96}$ computations. If we assume that the cryptoeconomically secure entropy source updates every super-block, and a super-block comes every 20 seconds, then one can reasonably expect a hostile computing cluster to be able to perform $2^{48}$ work within that time, so we will target a failure probability of $2^{-48}$ (this implies roughly one failure per 445979 years of being under attack). We can determine the failure probability with the binomial distribution formula:
 \\
 \\
 $PE(n, k, p) = p^k * (1-p)^{n-k} * \frac{n!}{k!(n-k)!}$
@@ -532,7 +532,7 @@ There are two problems with this scheme as described above. The first problem is
 
 The solution that we propose is a multi-round escalation game: a challenger proposes a transaction to point out an invalid previous block, and that transaction will be validated by $2m$ validators. If either the challenger or a validator is unhappy with the result, they can then make another challenge, providing twice as high a deposit but resulting in the block being reviewed by $4m$ validators. Another appeal is possible with a 4x deposit, which will be reviewed by $8m$ validators, and so on until all validators participate. Game-theoretically analyzing this, one can find that an attacker that spends $b * L$ resources can at most increase a node's computational load by a constant factor, and recursive elimination of dominated strategies leads to honesty being a subgame-perfect equilibrium in the normal case.
 
-An alternative approach for ensuring validity is to simply use a succinct cryptographic proof in place of a cryptoeconomic one, seemingly removing the need for fallback schemes entirely. A zk-SNARK can theoretically be attached to the header of a block, proving that all of the transactions in the block are valid and that the final state roots are correct. However, this has a few problems. First, zk-SNARKs rely on much less robust cryptographic assumptions than hashes and signatures; particularly, it is not known if zk-SNARKs are even possible to secure against quantum computers, whereas strong candidates for quantum-proof digital signatures are well-known \cite{ntrusign} \cite{hashladder}.
+An alternative approach for ensuring validity is to simply use a succinct cryptographic proof in place of a cryptoeconomic one, seemingly removing the need for fallback schemes entirely. A zk-SNARK can theoretically be attached to the header of a block, proving that all of the transactions in the block are valid and that the final state roots are correct. However, this has a few problems. First, zk-SNARKs rely on much less robust cryptographic assumptions than hashes and signatures; particularly, it is not known if zk-SNARKs are even possible to secure against quantum computers, whereas strong candidates for quantum-proof digital signatures are well-known \cite{ntrusign} \cite{hashladder} \cite{sphincs}.
 
 \chapter{Data availability}
 
@@ -820,10 +820,13 @@ Finally, there is plenty of room for optimization in strategies, figuring out ho
     Tendermint: Consensus without mining, Jae Kwon: \url{http://tendermint.com/docs/tendermint.pdf}
 
 \bibitem{ntrusign}
-    NTRUSign: Digital Signatures Using The NTRU Lattice: \url{http://www.math.brown.edu/~jpipher/NTRUSign_RSA.pdf}
+    NTRUSign: Digital Signatures Using The NTRU Lattice, Jeffrey Hoffstein et al: \url{http://www.math.brown.edu/~jpipher/NTRUSign_RSA.pdf}
 
 \bibitem{hashladder}
-    Hash Ladders for Shorter Lamport Signatures: \url{https://gist.github.com/karlgluck/8412807}
+    Hash Ladders for Shorter Lamport Signatures, Karl Gluck: \url{https://gist.github.com/karlgluck/8412807}
+
+\bibitem{sphincs}
+    SPHINCS: Practical Stateless Hash-based Signatures, Daniel Bernstein et al: \url{http://sphincs.cr.yp.to/}
 
 \bibitem{econofcrime}
     Economics of Crime, Erling Eide, Paul H Rubin, Joanna Mehlop Shepherd: \url{https://books.google.ca/books?id=gr95IhFHXHoC&pg=PA45}

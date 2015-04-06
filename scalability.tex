@@ -21,9 +21,17 @@
 \newtheorem*{rem}{Remark}
 \newtheorem*{note}{Note}
 
+\usepackage{titling}
+\newcommand{\subtitle}[1]{%
+  \posttitle{%
+    \par\end{center}
+    \begin{center}\large#1\end{center}
+    \vskip0.5em}%
+}
 
-\title{Notes on Scalable Blockchain Protocols (version 0.0.2)}
-\date{March 14-31, 2015}
+\title{Notes On Scalable Blockchain Protocols}
+\subtitle{Version 0.0.2}
+\date{\today}
 \author{Vitalik Buterin (Ethereum) \\  \\ Reviewers and collaborators: Gavin Wood, Vlad Zamfir (Ethereum), \\ Jeff Coleman (Kryptokit)}
 
 \begin{document}

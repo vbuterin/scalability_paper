@@ -728,7 +728,7 @@ Employ an adaptive algorithms, perhaps adapting Karger's minimal-cut algorithm \
 \item
 Create new substates every time existing substates get too large, and incentivize users that marginally care less about network effect to act in those substates by lowering transaction fee pricing. This removes the ability to make arbitrary splits, but also leads to unpredictable pricing since prices do need to go up to incentivize users away from high-activity substates - although the pricing would be far more even and less discretionary.
 \item
-Allow users to set the location of objects in the state with arbitrary fineness, but with increased cost for higher degrees of fineness. Hence, objects that need to be very close to each other can pay the cost for extreme co-location, whereas other objects can place themselves further apart.
+Allow users to set the location of objects in the state with arbitrary fineness, but with increased cost for higher degrees of fineness. Hence, objects that need to be very close to each other can pay the cost for extreme co-location, whereas other objects can place themselves further apart. This is the strategy undertaken in Gavin Wood's fiber-chains proposal\cite{fiberchains}.
 \end{itemize}
 
 \chapter{Further optimizations}
@@ -760,7 +760,7 @@ For the fifth, an ideal goal would be to have a blockchain design which allows u
 
 Finally, there is plenty of room for optimization in strategies, figuring out how validators can self-organize in order to maximize the expressivity of the state transition function in practice. The ideal goal is to present an interface to developers that ``just works'', providing a set of highly robust abstractions that achieve strong security bounds, freeing developers of the need to think about the underlying architecture, math and economics of the platform unless absolutely necessary. But this problem can be solved much later than the others, and solutions can much more easily continue to be iterated even after the underlying blockchain protocol is developed.
 
-\begin{thebibliography}{27}
+\begin{thebibliography}{29}
 
 \bibitem{mmpetertodd}
     Peter Todd on merge-mining, Dec 2013: \url{http://sourceforge.net/p/bitcoin/mailman/message/31796158/}
@@ -845,6 +845,9 @@ Finally, there is plenty of room for optimization in strategies, figuring out ho
 
 \bibitem{inclusive}
     Inclusive Blockchain Protocols, Yoad Lewenberg, Yonatan Sompolinsky, Aviv Zohar: \url{http://fc15.ifca.ai/preproceedings/paper_101.pdf}
+
+\bibitem{fiberchains}
+    Blockchain Scalability: Chain Fibers Redux: \url{https://blog.ethereum.org/2015/04/05/blockchain-scalability-chain-fibers-redux/}
 
 \end{thebibliography}
 

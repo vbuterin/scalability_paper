@@ -365,8 +365,8 @@ SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a forma
 There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of Sztorcian counter-coordination\cite{sztorc}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
 
 \begin{center}
-\includegraphics[width=165pt]{schellingcoin_payoff1.png}
-\includegraphics[width=165pt]{schellingcoin_payoff2.png}
+\includegraphics[width=165pt]{figs/pdfs/schellingcoin_payoff1.pdf}
+\includegraphics[width=165pt]{figs/pdfs/schellingcoin_payoff2.pdf}
 \end{center}
 
 This approach accepts that attackers with a budget even larger than the size of everyone's security deposits will be able to cause everyone to flip to voting incorrectly as an equilibrium, but advocates note that attackers that large will also be able to arbitrarily disrupt the underlying blockchain consensus anyway.
@@ -535,7 +535,7 @@ The previous algorithm provided a statistical guarantee of data availability and
 One natural solution that may be proposed is a ``fallback game'': allow any validator to ``challenge'' a particular block's validity by putting some quantity of funds at stake (if no funds are at stake, then an attacker can increase load on the network arbitrarily at no cost), and ask the header chain to be the ``validator-of-last-resort''. If the data for the block is available, then this is easy: the validator provides the full block to the header chain, and the header chain validates the block; if the block is valid, then the challenger loses some portion of their security deposit, and if the block is invalid then the block is reverted and the validators that signed the block lose their entire security deposit (and a portion of that deposit goes to the challenger as a reward). The game that arises from this scenario can be seen as follows:
 
 \begin{center}
-\includegraphics[width=200pt]{game.png}
+\includegraphics[width=200pt]{figs/pdfs/game.pdf}
 \end{center}
 
 Above we assume $1$ is the block reward, $-\delta$ is an expected private payoff to the validator of an invalid block getting into the blockchain (all we know about this payoff is that it is less than zero; it could take any magnitude depending on the situation of the particular validator and ultimately does not matter for the purposes of the game-theoretic argument), $100$ is the security deposit, $10$ is the whistleblower's reward and $-10$ is the penalty for whistleblowing falsely (ie. on a valid block). Note that the block producer ``plays'' first. If the block producer makes an invalid block, then the challenger will challenge, and so the block producer will earn $-100$; but by making a valid block the block producer will earn $1$. Hence, the block producer will make a valid block, and in that case the challenger will earn a higher profit of $0$ rather than $-10$ by not challenging and so will not challenge. Thus providing a valid block is a subgame-perfect equilibrium.
@@ -667,19 +667,19 @@ For the sake of simplicity, suppose that every super-block contains a block modi
 We will show why this is true by illustration. Consider a sequence of states with a set of blocks updating the state during each super-block:
 
 \begin{center}
-\includegraphics[width=200pt]{revert1.png}
+\includegraphics[width=0.7\textwidth]{figs/pdfs/revert1.pdf}
 \end{center}
 
 Now, suppose that one of those blocks is invalid. Then, if we manage to revert immediately in the next block, the state will be moved to the red line here:
 
 \begin{center}
-\includegraphics[width=200pt]{revert2.png}
+\includegraphics[width=0.7\textwidth]{figs/pdfs/revert2.pdf}
 \end{center}
 
 And if we revert later, the state will be moved to the red line here:
 
 \begin{center}
-\includegraphics[width=200pt]{revert3.png}
+\includegraphics[width=0.7\textwidth]{figs/pdfs/revert3.pdf}
 \end{center}
 
 Notice that one can apply the set of still-valid blocks sequentially to $\sigma$ to obtain $\sigma'_f$ in all cases.
@@ -705,7 +705,7 @@ We maintain the restriction that all objects produced at any point must have a s
 The definition is simple, and so somewhat obscures the complex inner workings of what is going on. Hence, let us provide an example. Consider a transform of the fallback-plus-subjective-resolution scheme provided above with $d = 3$. There would now be four ``levels'' of data structures. At the bottom level, we have the ultimate transactions that are affecting the state. Then, on the third level we have blocks containing those transactions. To validate blocks on this third level, there are $O(N^{2-\epsilon})$ validators (each with a deposit of size $O(N)$), which are recorded on the second level; a block on the third level must obtain signatures from $\frac{2m}{3}$ out of a pool of $m$ validators obtained from \emph{the entire pool} of second-level validators. However, the process of verifying that signatures from the correct validator pool are provided itself depends on data that is not shared globally (as it is on the second level), and so that process itself as a state transition function needs to be carried out using the two-level scalable protocol, ie. a second-level block would treat the second-level validators accessed by all third-level blocks contained inside of it as part of its ``observed area''. Blocks containing these transactions would themselves be voted on by the header chain, which has $O(N^{1-\epsilon})$ validators each with a deposit of size $O(N^2)$.
 
 \begin{center}
-\includegraphics[width=250pt]{multilevel.png}
+\includegraphics[width=250pt]{figs/pdfs/multilevel.pdf}
 \end{center}
 
 At this point, the algorithm almost has $O(N^{3-\epsilon})$ scalability, but not quite. There are two reasons why. First, note that each third-level block independently picks $m$ validators. Hence, if a second-level block has $O(N)$ transactions, and assuming that there are $O(N)$ second-level substates, we can expect a single second-level block to have an observed area of size $1 - \frac{1}{e^m}$ of the whole set of substates - which for even the highly unrealistic $m = 5$ amounts to almost all of it. Hence, there can be at most one second-level block, and so our scalability is right back to $O(N^{2-\epsilon})$.

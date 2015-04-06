@@ -18,4 +18,4 @@ scalability.pdf: scalability.tex $(FIGURES) version.tex
 	$(LATEX) $<
 
 clean:
-	rm -f scalability.pdf scalability.aux scalability.bbl scalability.blg scalability.log scalability.toc scalability.synctex.gz version.tex
+	rm -f scalability.pdf scalability.aux scalability.bbl scalability.blg scalability.log scalability.toc scalability.synctex.gz version.tex scalability.out

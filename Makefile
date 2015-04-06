@@ -7,7 +7,10 @@ all: scalability.pdf
 figs/pdfs/%.pdf : figs/svgs/%.svg
 	make -C figs pdfs/$(notdir $@)
 
-scalability.pdf: scalability.tex $(FIGURES)
+version.tex:
+	git describe --abbrev=0 --tags > $@
+
+scalability.pdf: scalability.tex $(FIGURES) version.tex
 	$(LATEX) $<
 	#$(BIBTEX) $(basename $@)
 	$(LATEX) $<
@@ -15,4 +18,4 @@ scalability.pdf: scalability.tex $(FIGURES)
 	$(LATEX) $<
 
 clean:
-	rm -f scalability.pdf scalability.aux scalability.bbl scalability.blg scalability.log scalability.toc scalability.synctex.gz
+	rm -f scalability.pdf scalability.aux scalability.bbl scalability.blg scalability.log scalability.toc scalability.synctex.gz version.tex

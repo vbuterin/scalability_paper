@@ -2,6 +2,20 @@
 \usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,url,array,graphicx}
 \usepackage[english]{babel}
 
+\usepackage[linktoc=all]{hyperref}
+
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+\usepackage[nottoc,notlot,notlof]{tocbibind}
+\usepackage{natbib}
+\usepackage[utf8]{inputenc}
+\pagestyle{headings}
 
 \theoremstyle{plain}
 \newtheorem{thm}{Theorem}[section]
@@ -21,26 +35,38 @@
 \newtheorem*{rem}{Remark}
 \newtheorem*{note}{Note}
 
+\usepackage{titling}
+\newcommand{\subtitle}[1]{%
+  \posttitle{%
+    \par\end{center}
+    \begin{center}\large#1\end{center}
+    \vskip0.5em}%
+}
 
-\title{Notes on Scalable Blockchain Protocols (version 0.0.2)}
-\date{March 14-31, 2015}
-\author{Vitalik Buterin (Ethereum) \\  \\ Reviewers and collaborators: Gavin Wood, Vlad Zamfir (Ethereum), \\ Jeff Coleman (Kryptokit)}
+\title{Notes On Scalable Blockchain Protocols}
+\subtitle{Version \input{version}}
+\author{Vitalik Buterin \\ Ethereum \and Gavin Wood \\ Ethereum \and Vlad Zamfir  \\ Ethereum \and Jeff Coleman \\ Kryptokit}
+\date{\today}
 
 \begin{document}
 
 \maketitle
 
+\pagebreak
+\tableofcontents
+\pagebreak
+
 \chapter{Introduction}
 
 Currently, all blockchain consensus protocols that are actively in use have a critical limitation: every node in the network must process every transaction. Although this requirement ensures a very strong guarantee of security, making it all but impossible for an attacker even with control over every node participating in the consensus process to convince the network of the validity of an invalid transaction, it comes at a heavy cost: every blockchain protocol that works in this way is forced to choose between limiting itself to a low maximum transaction throughput, with a resulting high per-transaction cost, and allowing a high degree of centralization.
 
-What might perhaps seem like a natural solution, splitting the relevant data over a thousand blockchains, has the two fundamental problems that it (i) decreases security, to the point where the security of \emph{each individual blockchain} on average does not grow \emph{at all} as total usage \emph{of the ecosystem} increases, and (ii) massively reduces the potential for interoperability. Other approaches, like merge-mining, seem to have stronger security, though in practice such approaches are either very weak in more subtle ways \cite{mmpetertodd} - and indeed, merged mined blockchains have successfully been attacked\cite{coiledcoin} - or simply fail to solve scalability, requiring every consensus participant to process every blockchain and thus every transaction anyway.
+What might perhaps seem like a natural solution, splitting the relevant data over a thousand blockchains, has the two fundamental problems that it (i) decreases security, to the point where the security of \emph{each individual blockchain} on average does not grow \emph{at all} as total usage \emph{of the ecosystem} increases, and (ii) massively reduces the potential for interoperability. Other approaches, like merge-mining, seem to have stronger security, though in practice such approaches are either very weak in more subtle ways \citep{todd_re:_2013} - and indeed, merged mined blockchains have successfully been attacked\citep{piasecki_what_2012} - or simply fail to solve scalability, requiring every consensus participant to process every blockchain and thus every transaction anyway.
 
-There are several reasons why scalable blockchain protocols have proven to be such a difficult problem. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes now necessarily need to employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire "state", and must therefore be a "light client", downloading only a small amount of header data and not performing full verification checks, everywhere else. Second, we need to be concerned not only with validity but also with data availability; it is entirely possible for a block to appear that looks valid, and is valid, but for which the auxiliary data is unavailable, leading to a situation where no other validator can effectively validate transactions or produce new blocks since the necessary data is unavailable to them. Finally, transactions must necessarily be processed by different nodes in parallel, and given that it is not possible to parallelize arbitrary computation \cite{parallelcomputing}, we must determine the set of restrictions to a state transition function that will best balance parallelizability and utility.
+There are several reasons why scalable blockchain protocols have proven to be such a difficult problem. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes now necessarily need to employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire "state", and must therefore be a "light client", downloading only a small amount of header data and not performing full verification checks, everywhere else. Second, we need to be concerned not only with validity but also with data availability; it is entirely possible for a block to appear that looks valid, and is valid, but for which the auxiliary data is unavailable, leading to a situation where no other validator can effectively validate transactions or produce new blocks since the necessary data is unavailable to them. Finally, transactions must necessarily be processed by different nodes in parallel, and given that it is not possible to parallelize arbitrary computation \citep{amdahl_validity_1967,gustafson_reevaluating_1988}, we must determine the set of restrictions to a state transition function that will best balance parallelizability and utility.
 
 This paper proposes another set of strategies for achieving scalability, as well as some formalisms that can be used when discussing and comparing scalable blockchain protocols. Generally, the strategies revolve around a "sample-and-fallback" game: in order for any particular block to be valid, require it to be approved by a randomly selected sample of validators, and in case a bad block does come through employ a mechanism in which a node can challenge invalid blocks, reverting the harmful transactions and transferring the malfeasant validators' security deposit to the challengers as a reward unless the challenge is answered by a confirmation of validity from a much greater number of validators. Theoretically, under a Byzantine-fault-tolerant model of security, fallback is unnecessary; sampling only is sufficient. However, if we are operating in an anonymous-validator environment, then it is also considered desirable to have a hard economic guarantee of the minimum quantity of funds that needs to be destroyed in order to cause a certain level of damage to the network; in that case, in order to make the economic argument work we use fallback as a sort of incentivizer-of-last-resort, making cooperation the only subgame-perfect equilibrium.
 
-The particular advantage that our designs provide is a very high degree of generalization and abstraction; although other schemes using technologies like auditable computation\cite{auditable} and micropayment channels\cite{lightning} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs require no specific properties of the underlying state transition function except for the demand that most state changes are in some sense ``localized''.
+The particular advantage that our designs provide is a very high degree of generalization and abstraction; although other schemes using technologies like auditable computation\citep{buterin_scalability_2014} and micropayment channels\citep{poon_bitcoin_2015} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs require no specific properties of the underlying state transition function except for the demand that most state changes are in some sense ``localized''.
 
 Our basic designs allow for a network consisting solely of nodes bounded by $O(N)$ computational power to process a transaction load of $O(N^{2-\epsilon})$ (we generally use $O(N^\epsilon)$ to denote polylogarithmic terms for simplicity), under both Byzantine-fault-tolerant and economic security models; we then also propose an experimental ``stacking'' strategy for achieving arbitrary scalability guarantees up to a maximum of $O(exp(N/k))$ transactional load, although we recommend that for simplicity implementers attempt to perfect the $O(N^{2-\epsilon})$ designs first.
 
@@ -80,7 +106,7 @@ A state transition function is \emph{replay-immune} if, for any $\sigma$, $\tau$
 \end{defn}
 
 \begin{note}
-Replay-immunity is \emph{not} a sufficient condition for being double-spend-proof. Descriptions of blockchains as ``anti-replay oracles'' \cite{gmaxwell} emphasize the functionality of preventing the successful application of \emph{more than one member of a particular class of transactions}, where the class is usually defined as the transactions that spend a particular unspent balance, which is different from the kind of replay-immunity that we describe here.
+Replay-immunity is \emph{not} a sufficient condition for being double-spend-proof. Descriptions of blockchains as ``anti-replay oracles'' \citep{maxwell_really_2013} emphasize the functionality of preventing the successful application of \emph{more than one member of a particular class of transactions}, where the class is usually defined as the transactions that spend a particular unspent balance, which is different from the kind of replay-immunity that we describe here.
 \end{note}
 
 \begin{defn}[Commutativity]
@@ -201,15 +227,15 @@ A \emph{cryptoeconomic state machine} is a tuple $(G, APPLY, P, F)$ where $G$ is
 \end{defn}
 
 \begin{note}
-The Byzantine-fault-tolerance requirement in place of a fixed quantity of weight controlled by altruists can be viewed an application of the Byzantine-Altruist-Rational model by Aiyer et al\cite{bar}; however, we depart from Aiyer et al's model in that in our case we allow rational nodes to be bribed by attackers with the total bribe having a particular maximum size.
+The Byzantine-fault-tolerance requirement in place of a fixed quantity of weight controlled by altruists can be viewed an application of the Byzantine-Altruist-Rational model by \cite{aiyer_bar_2005}; however, we depart from Aiyer et al's model in that in our case we allow rational nodes to be bribed by attackers with the total bribe having a particular maximum size.
 \end{note}
 
 \begin{note}
-A cryptoeconomic state machine requires either a Byzantine-fault-tolerant consensus or, as in the case of proof of work\cite{amiller}, a reasonably close approximation thereof. However, since our paper generally assumes the existence of non-scalable cryptoeconomic state machines as a given, we will not spend too much time discussing Byzantine fault-tolerant consensus theory, only seeking to show how the scalable consensus problem can be reduced to the non-scalable case.
+A cryptoeconomic state machine requires either a Byzantine-fault-tolerant consensus or, as in the case of proof of work \citep{miller_anonymous_2014}, a reasonably close approximation thereof. However, since our paper generally assumes the existence of non-scalable cryptoeconomic state machines as a given, we will not spend too much time discussing Byzantine fault-tolerant consensus theory, only seeking to show how the scalable consensus problem can be reduced to the non-scalable case.
 \end{note}
 
 \begin{note}
-The definition of economic security used above is taken from Vlad Zamfir's model of a ``bribing attacker'' \cite{zamfir}. Bribes do not need to represent literal monetary or other bribes; they can represent blackmail, threats, governmental influence, and even arbitrary personal tastes and prejudices; the intent is to model incentives outside the system by making the assumption that the size of these incentives is bounded by $b * L$. Complete security (ie. economic security under Byzantine faults), rather than simply economic security, is required because, in practice, there do also exist validators that are so irrational that they would pass on even a trillion-dollar incentive in order to stray from the protocol in some way, and it is sometimes possible to inflict extremely high disincentives against specific agents at only medium cost, eg. by means of violence.
+The definition of economic security used above is taken from Vlad Zamfir's model of a ``bribing attacker'' \citep{zamfir_formalizing_2015}. Bribes do not need to represent literal monetary or other bribes; they can represent blackmail, threats, governmental influence, and even arbitrary personal tastes and prejudices; the intent is to model incentives outside the system by making the assumption that the size of these incentives is bounded by $b * L$. Complete security (ie. economic security under Byzantine faults), rather than simply economic security, is required because, in practice, there do also exist validators that are so irrational that they would pass on even a trillion-dollar incentive in order to stray from the protocol in some way, and it is sometimes possible to inflict extremely high disincentives against specific agents at only medium cost, eg. by means of violence.
 \end{note}
 
 \begin{assm}
@@ -221,7 +247,7 @@ The \emph{validators} in a cryptoeconomic state machine are either (i) the users
 \end{defn}
 
 \begin{assm}[Wealth concentration]
-There exists some constant $b$ such that at least $b * L$ worth of economic power is concentrated in the hands of either individuals or groups of individuals capable of coordination that each have access to at least $\frac{b * L}{N^{1-\epsilon}}$ funds.\cite{piketty}
+There exists some constant $b$ such that at least $b * L$ worth of economic power is concentrated in the hands of either individuals or groups of individuals capable of coordination that each have access to at least $\frac{b * L}{N^{1-\epsilon}}$ funds \citep{piketty_capital_2014}.
 \end{assm}
 
 \begin{defn}[Scalability]
@@ -262,7 +288,7 @@ $V$ should only return 1 if $\pi$ is a proof showing that $V = \sigma[i]$ for so
 \end{defn}
 
 \begin{note}
-There exist Merkle tree protocols for which $P$ and $V$ can be computed in logarithmic time \cite{merkle}, and there exist state root functions which can determine the new state root after a minor change to a value or even the introduction or removal of a partition in logarithmic time.
+There exist Merkle tree protocols for which $P$ and $V$ can be computed in logarithmic time \citep{merkle_method_1982}, and there exist state root functions which can determine the new state root after a minor change to a value or even the introduction or removal of a partition in logarithmic time.
 \end{note}
 
 \begin{defn}[Merkle branch]
@@ -279,7 +305,7 @@ A cryptoeconomically secure entropy source is a protocol inside of a state trans
 \end{defn}
 
 \begin{exmp}
-The cryptoeconomically secure entropy source used in NXT\cite{nxtinside} is defined recursively as follows:
+The cryptoeconomically secure entropy source used in NXT \citep{nxt_community_nxt_2014} is defined recursively as follows:
 \begin{itemize}
 \item
 $E(G) = 0$
@@ -333,7 +359,7 @@ $P(prog, I_s, I_p) \rightarrow \pi$ generates a proof that $prog(I_s, I_p)$ for 
 \item
 $V(k, I_p, o, \pi) \rightarrow \{0, 1\}$ verifies a proof, accepting it only if $\pi$ is actually a proof that $prog(I_s, I_p) = o$ where $G(prog) = k$.
 \end{itemize}
-Additionally, $\pi$ should reveal no information about the value of $I_s$. Schemes exist \cite{snark} to perform $G$ and $P$ in a time equal to $O(N*log^k(N))$ for a small $k$ where $N$ is the number of execution steps, and $V$ can be computed in some cases in polylogarithmic time and in some cases in constant time.
+Additionally, $\pi$ should reveal no information about the value of $I_s$. Schemes exist \citep{ben-sasson_succinct_2014} to perform $G$ and $P$ in a time equal to $O(N*log^k(N))$ for a small $k$ where $N$ is the number of execution steps, and $V$ can be computed in some cases in polylogarithmic time and in some cases in constant time.
 \end{defn}
 
 \begin{note}
@@ -354,15 +380,18 @@ A participant whose vote aligns with the majority vote receives a reward of $P$.
 \item
 A participant whose vote does not align with the majority vote receives a reward of $0$.
 \end{itemize}
-SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a formal definition of economic security it cannot be viewed as having any security margin at all, though the difficulty of the inherent coordination problem may still allow the scheme to function in practice. An attacker with a budget greater than $P$ and the ability to credibly commit to to providing a bribe under certain conditions in the future can, assuming rationality of the participants, effect an equilibrium flip toward a wrong answer at no cost \cite{pepsilon}.
+SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a formal definition of economic security it cannot be viewed as having any security margin at all, though the difficulty of the inherent coordination problem may still allow the scheme to function in practice. An attacker with a budget greater than $P$ and the ability to credibly commit to to providing a bribe under certain conditions in the future can, assuming rationality of the participants, effect an equilibrium flip toward a wrong answer at no cost \citep{buterin_p_2015}.
 \end{exmp}
 
 \begin{note}
-There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of Sztorcian counter-coordination\cite{sztorc}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
+
+% TODO: This analysis is pointlessly abstract; a sobering analysis would point out that the Augur has (1) a "Trust" presale and (2) is weighted via bit coin.  This naturally means that VCs or financiers with lots of bit coin holdings can use Augur as a distributed, "plausible deniability" oracle for publishing copy right material on a blockchain.  Such financiers are not interested in this pie-in-the-sky non-cooperative game theoretic analyses but a real-world analysis on their voting power.
+
+There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of \emph{TruthCoin}-style counter-coordination \citep{sztorc_trustless_2014}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
 
 \begin{center}
-\includegraphics[width=165pt]{schellingcoin_payoff1.png}
-\includegraphics[width=165pt]{schellingcoin_payoff2.png}
+\includegraphics[width=165pt]{figs/pdfs/schellingcoin_payoff1.pdf}
+\includegraphics[width=165pt]{figs/pdfs/schellingcoin_payoff2.pdf}
 \end{center}
 
 This approach accepts that attackers with a budget even larger than the size of everyone's security deposits will be able to cause everyone to flip to voting incorrectly as an equilibrium, but advocates note that attackers that large will also be able to arbitrarily disrupt the underlying blockchain consensus anyway.
@@ -379,7 +408,7 @@ The Merkle-branch-based definition of DHT given above can be deduced easily from
 \end{note}
 
 \begin{exmp}
-Kademlia \cite{kademlia} is an example of a distributed hash table. A more direct implementation of our desired formalism with Merkle branches will be available from IPFS \cite{ipfs}.
+Kademlia \citep{maymounkov_kademlia:_2002} is an example of a distributed hash table. A more direct implementation of our desired formalism with Merkle branches will be available from IPFS \citep{benet_ipfs_2014}.
 \end{exmp}
 
 \chapter{Global Variables}
@@ -433,7 +462,7 @@ A \emph{block} is a package containing:
 A \emph{transaction} is a transaction as before.
 \end{itemize}
 
-We use any non-scalable consensus algorithm (eg. Tendermint\cite{tendermint}) for processing super-blocks, except that we define a custom ``top-level'' state transition function $APPLY'$. For the state processed by $APPLY'$, we use $\psi = \{i: R(\sigma[i]) \; for \; i \in [n]\} + E(\sigma) + V(\sigma)$ where $E(\sigma)$ is a cryptoeconomically secure entropy source in $\sigma$ and $V(\sigma)$ is a set of ``validators'' registered in $\sigma$. From the point of view of $APPLY'$, we define a block header $\beta$ as being valid in the context of $\psi$ if the following are all true:
+We use any non-scalable consensus algorithm for processing super-blocks, except that we define a custom ``top-level'' state transition function $APPLY'$. For the state processed by $APPLY'$, we use $\psi = \{i: R(\sigma[i]) \; for \; i \in [n]\} + E(\sigma) + V(\sigma)$ where $E(\sigma)$ is a cryptoeconomically secure entropy source in $\sigma$ and $V(\sigma)$ is a set of ``validators'' registered in $\sigma$. From the point of view of $APPLY'$, we define a block header $\beta$ as being valid in the context of $\psi$ if the following are all true:
 
 \begin{itemize}
 \item
@@ -528,12 +557,12 @@ We can also require validators to have security deposits of size $O(N^{1-\epsilo
 
 The previous algorithm provided a statistical guarantee of data availability and validity by simply assuming that at least two thirds of validators are honest; however, it carries an inherent fragility: if, for any reason, a small sample of nodes actually does end up signing off on an invalid block, then the system will need to hard-fork once the fault is discovered. This results in two practical weaknesses. First, larger safety factors are required on the sample sizes in order to ensure that a sample is absolutely never malicious. Second, the economic security of the algorithm, under our formal definition, approaches zero as $L$ increases if defined as a fraction of $L$. An attacker will only need to bribe $m$ out of a total $O(N^{1-\epsilon})$ validators in order to produce an invalid block that enters the system. Hence, as $N$ increases, there is no fixed bound $b$ of proportionality between the weight and the security margin; the ratio goes lower the larger the system gets. Sampling provides security against random faults, but not against targeted faults, which bribery can theoretically achieve.
 
-One approach to dealing with the latter issue is to not bother with economic security, and simply rely on Byzantine-fault-tolerance guarantees to determine security. In order to ensure beneficence of the network maintains over time, we ask validators to censor attempts to join the validator pool by parties that appear to be unreliable or likely to be malfeasant. In some cases, particularly regulated financial systems, such restrictions are necessary in any case and so we need to go no further\cite{swanson}. If we are trying to create a more open network, however, then such a solution is unsatisfactory, and so we arguably need not just Byzantine fault tolerance but also regulation via economic incentives.
+One approach to dealing with the latter issue is to not bother with economic security, and simply rely on Byzantine-fault-tolerance guarantees to determine security. In order to ensure beneficence of the network maintains over time, we ask validators to censor attempts to join the validator pool by parties that appear to be unreliable or likely to be malfeasant. In some cases, particularly regulated financial systems, such restrictions are necessary in any case and so we need to go no further \citep{swanson_consensus-as--service:_2015}. If we are trying to create a more open network, however, then such a solution is unsatisfactory, and so we arguably need not just Byzantine fault tolerance but also regulation via economic incentives.
 
 If economic security is indeed desired, one natural solution that may be proposed is a ``fallback game'': allow any validator to ``challenge'' a particular block's validity by putting some quantity of funds at stake (if no funds are at stake, then an attacker can increase load on the network arbitrarily at no cost), and ask the header chain to be the ``validator-of-last-resort''. If the data for the block is available, then this is easy: the validator provides the full block to the header chain, and the header chain validates the block; if the block is valid, then the challenger loses some portion of their security deposit, and if the block is invalid then the block is reverted and the validators that signed the block lose their entire security deposit (and a portion of that deposit goes to the challenger as a reward). The game that arises from this scenario can be seen as follows:
 
 \begin{center}
-\includegraphics[width=200pt]{game.png}
+\includegraphics[width=200pt]{figs/pdfs/game.pdf}
 \end{center}
 
 Above we assume $1$ is the block reward, $-\delta$ is an expected private payoff to the validator of an invalid block getting into the blockchain (all we know about this payoff is that it is less than zero; it could take any magnitude depending on the situation of the particular validator and ultimately does not matter for the purposes of the game-theoretic argument), $100$ is the security deposit, $10$ is the whistleblower's reward and $-10$ is the penalty for whistleblowing falsely (ie. on a valid block). Note that the block producer ``plays'' first. If the block producer makes an invalid block, then the challenger will challenge, and so the block producer will earn $-100$; but by making a valid block the block producer will earn $1$. Hence, the block producer will make a valid block, and in that case the challenger will earn a higher profit of $0$ rather than $-10$ by not challenging and so will not challenge. Thus providing a valid block is a subgame-perfect equilibrium.
@@ -542,7 +571,7 @@ There are two problems with this scheme as described above. The first problem is
 
 The solution that we propose is a multi-round escalation game: a challenger proposes a transaction to point out an invalid previous block, and that transaction will be validated by $2m$ validators. If either the challenger or a validator is unhappy with the result, they can then make another challenge, providing twice as high a deposit but resulting in the block being reviewed by $4m$ validators. Another appeal is possible with a 4x deposit, which will be reviewed by $8m$ validators, and so on until all validators participate. Game-theoretically analyzing this, one can find that an attacker that spends $b * L$ resources can at most increase a node's computational load by a constant factor, and recursive elimination of dominated strategies leads to honesty being a subgame-perfect equilibrium in the normal case.
 
-An alternative approach for ensuring validity is to simply use a succinct cryptographic proof in place of a cryptoeconomic one, seemingly removing the need for fallback schemes entirely. A zk-SNARK can theoretically be attached to the header of a block, proving that all of the transactions in the block are valid and that the final state roots are correct. However, this has a few problems. First, zk-SNARKs rely on much less robust cryptographic assumptions than hashes and signatures; particularly, it is not known if zk-SNARKs are even possible to secure against quantum computers, whereas strong candidates for quantum-proof digital signatures are well-known \cite{ntrusign} \cite{hashladder} \cite{sphincs}.
+An alternative approach for ensuring validity is to simply use a succinct cryptographic proof in place of a cryptoeconomic one, seemingly removing the need for fallback schemes entirely. A zk-SNARK can theoretically be attached to the header of a block, proving that all of the transactions in the block are valid and that the final state roots are correct. However, this has a few problems. First, zk-SNARKs rely on much less robust cryptographic assumptions than hashes and signatures; particularly, it is not known if zk-SNARKs are even possible to secure against quantum computers, whereas strong candidates for quantum-proof digital signatures are well-known \citep{bernstein_sphincs:_2014, gluck_hash_2014, hoffstein_ntrusign:_2003}.
 
 \chapter{Data availability}
 
@@ -563,7 +592,7 @@ An attacker creates a block with transactions $T_1$ ... $T_n$, where $T_1$ ... $
 \end{exmp}
 
 \begin{note}
-One way to try to solve both attacks above is to require every valid transaction to show a valid ``source'' of its income. However, this leads to a recursive buck-passing problem: what if the attacker performs a sudden millionaire attack to create a new unexplained account $A_1$, then creates a block with an unavailable transaction sending funds from $A_1$ to $A_2$ (possibly a set of multiple accounts), then $A_3$, and so forth until finally collecting the funds at $A_n$, and then finally reveals all transactions upon receiving $A_n$. The total dependency tree of a transaction may well have total size $\omega(N)$. Peter Todd's tree-chains discussion offers the solution\cite{treechains} of limiting the protocol to handling a fixed number (possibly $\omega(N)$) of ``coins'', each one with a linear history; however, this solution is not sufficiently generalizeable and abstract for our purposes and carries high constant-factor overhead.
+One way to try to solve both attacks above is to require every valid transaction to show a valid ``source'' of its income. However, this leads to a recursive buck-passing problem: what if the attacker performs a sudden millionaire attack to create a new unexplained account $A_1$, then creates a block with an unavailable transaction sending funds from $A_1$ to $A_2$ (possibly a set of multiple accounts), then $A_3$, and so forth until finally collecting the funds at $A_n$, and then finally reveals all transactions upon receiving $A_n$. The total dependency tree of a transaction may well have total size $\omega(N)$. Peter Todd's tree-chains discussion offers the solution \citep{todd_re:_2014} of limiting the protocol to handling a fixed number (possibly $\omega(N)$) of ``coins'', each one with a linear history; however, this solution is not sufficiently generalizeable and abstract for our purposes and carries high constant-factor overhead.
 \end{note}
 
 \begin{exmp}[Payment denial attack]
@@ -600,7 +629,10 @@ We know that $c_r \le c_b$, as otherwise producing errant blocks and then callin
 \item
 Hence, $c_c$ is proportional to $c_r$, so there is some constant $k = \frac{c_c}{c_r}$.
 \item
-A node starts off having some prior probability distribution $D$ over the probability $p$ of a random invalid block later revealing data. Assume for simplicity that this prior was derived from Laplacian succession\cite{laplace} with $s$ instances of later revelation and $f$ instances of non-revelation. After $f * k$ repeats of producing a block with invalid data and later revealing it, a node will rationally assume that the next block will have revelation probability $\frac{s + f * k}{s + f + f * k} > 1 - \frac{1}{k}$.
+A node starts off having some prior probability distribution $D$ over the probability $p$ of a random invalid block later revealing data. Assume for simplicity that this prior was derived from Laplacian succession \citep{laplace_essai_1840} with $s$ instances of later revelation and $f$ instances of non-revelation. After $f * k$ repeats of producing a block with invalid data and later revealing it, a node will rationally assume that the next block will have revelation probability $\frac{s + f * k}{s + f + f * k} > 1 - \frac{1}{k}$.
+
+% TODO: Note Russell's turkey and the fallacy inherent in this analysis
+
 \item
 Hence, it will not be rational for that node to issue a challenge when the next block with unavailable data appears.
 \end{itemize}
@@ -630,7 +662,7 @@ We also add a rule that the producer of a block is slightly penalized if it is c
 
 A possible scheme for removing the need for altruism even \emph{in extremis} works as follows. First, we require the proposer for each superblock to compute a small amount of proof of work, perhaps with per-superblock cost $w = r * 0.01$ where $r$ is the superblock reward. Proof of work is required to provide a highly secure cryptoeconomic entropy source which is completely unpredictable; alternatives such as NXT can far too easily be foretold in advance. From this value, we then select a random substate, and we ask all top-level validators to check availability on the most recent block in that substate. If the block is indeed unavailable, and the block has been challenged, then the challengers split a reward of size $r_c = w * 0.49 \in O(N^{2-\epsilon})$. The superblock proposer also gets a reward of equal size.
 
-The scheme can be thought of an inverted application of a standard result from law and economics: one can achieve compliance with arbitrarily low enforcement cost by simply decreasing the level of enforcement, and thus the probability of getting caught, but simultaneously increasing the fine\cite{econofcrime} - except, in our case, we are performing the exact opposite task of a police department as we are trying to \emph{incentivize a virtuous usually-costly action} with the occasional application of a \emph{reward}. The load each validator is at most the cost of downloading one block, $O(N^{1-\epsilon})$, and each substate will have a propbbility of at least $\frac{1}{O(N^{1-\epsilon})}$ of being randomly inspected; hence the scheme does not compromise scalability. However, assuming that a top-level challenge has at least a fixed probability $p$ of correctly determining that an unavailable block is unavailable before the attacker manages to broadcast it across the network, this provides an average incentive of $\frac{r_c}{O(N^{1-\epsilon})} \in O(N)$ in order to challenge, making it statistically worthwhile to challenge invalid blocks despite the cost.
+The scheme can be thought of an inverted application of a standard result from law and economics: one can achieve compliance with arbitrarily low enforcement cost by simply decreasing the level of enforcement, and thus the probability of getting caught, but simultaneously increasing the fine \citep{eide_economics_2006} - except, in our case, we are performing the exact opposite task of a police department as we are trying to \emph{incentivize a virtuous usually-costly action} with the occasional application of a \emph{reward}. The load each validator is at most the cost of downloading one block, $O(N^{1-\epsilon})$, and each substate will have a propbbility of at least $\frac{1}{O(N^{1-\epsilon})}$ of being randomly inspected; hence the scheme does not compromise scalability. However, assuming that a top-level challenge has at least a fixed probability $p$ of correctly determining that an unavailable block is unavailable before the attacker manages to broadcast it across the network, this provides an average incentive of $\frac{r_c}{O(N^{1-\epsilon})} \in O(N)$ in order to challenge, making it statistically worthwhile to challenge invalid blocks despite the cost.
 
 Note that it is expensive for the challenger to manipulate the proof of work either upward or downward. Once the challenger has computed the proof of work successfully, a bribe of size $r_c \in O(N^{2-\epsilon})$ is required to dissuade him from starting the top-level challenge procedure for the entire block, and with judicious choice of constants one can make the bribe exceed our desired threshold $b * L$. If the challenger wants to \emph{increase} the probability of triggering a top-level challenge in order to earn the $r_c$ reward, possibly in collusion with the challengers, then note that even if the attacker has placed an invalid block on \emph{all} substates, re-computing the proof of work has cost $w$ and maximum expected collective reward $w * 0.98$.
 
@@ -665,19 +697,19 @@ For the sake of simplicity, suppose that every super-block contains a block modi
 We will show why this is true by illustration. Consider a sequence of states with a set of blocks updating the state during each super-block:
 
 \begin{center}
-\includegraphics[width=200pt]{revert1.png}
+\includegraphics[width=0.7\textwidth]{figs/pdfs/revert1.pdf}
 \end{center}
 
 Now, suppose that one of those blocks is invalid. Then, if we manage to revert immediately in the next block, the state will be moved to the red line here:
 
 \begin{center}
-\includegraphics[width=200pt]{revert2.png}
+\includegraphics[width=0.7\textwidth]{figs/pdfs/revert2.pdf}
 \end{center}
 
 And if we revert later, the state will be moved to the red line here:
 
 \begin{center}
-\includegraphics[width=200pt]{revert3.png}
+\includegraphics[width=0.7\textwidth]{figs/pdfs/revert3.pdf}
 \end{center}
 
 Notice that one can apply the set of still-valid blocks sequentially to $\sigma$ to obtain $\sigma'_f$ in all cases.
@@ -703,7 +735,7 @@ We maintain the restriction that all objects produced at any point must have a s
 The definition is simple, and so somewhat obscures the complex inner workings of what is going on. Hence, let us provide an example. Consider a transform of the fallback-plus-subjective-resolution scheme provided above with $d = 3$. There would now be four ``levels'' of data structures. At the bottom level, we have the ultimate transactions that are affecting the state. Then, on the third level we have blocks containing those transactions. To validate blocks on this third level, there are $O(N^{2-\epsilon})$ validators (each with a deposit of size $O(N)$), which are recorded on the second level; a block on the third level must obtain signatures from $\frac{2m}{3}$ out of a pool of $m$ validators obtained from \emph{the entire pool} of second-level validators. However, the process of verifying that signatures from the correct validator pool are provided itself depends on data that is not shared globally (as it is on the second level), and so that process itself as a state transition function needs to be carried out using the two-level scalable protocol, ie. a second-level block would treat the second-level validators accessed by all third-level blocks contained inside of it as part of its ``observed area''. Blocks containing these transactions would themselves be voted on by the header chain, which has $O(N^{1-\epsilon})$ validators each with a deposit of size $O(N^2)$.
 
 \begin{center}
-\includegraphics[width=250pt]{multilevel.png}
+\includegraphics[width=250pt]{figs/pdfs/multilevel.pdf}
 \end{center}
 
 At this point, the algorithm almost has $O(N^{3-\epsilon})$ scalability, but not quite. There are two reasons why. First, note that each third-level block independently picks $m$ validators. Hence, if a second-level block has $O(N)$ transactions, and assuming that there are $O(N)$ second-level substates, we can expect a single second-level block to have an observed area of size $1 - \frac{1}{e^m}$ of the whole set of substates - which for even the highly unrealistic $m = 5$ amounts to almost all of it. Hence, there can be at most one second-level block, and so our scalability is right back to $O(N^{2-\epsilon})$.
@@ -726,7 +758,7 @@ One major category of strategy that must be developed is for \emph{index selecti
 
 Additionally, note that index selection also becomes a concern when one or more blocks is in purgatory. In this case, a block producer producing a block on top of a block in purgatory has the concern that their block may be reverted. Hence, a possible strategy that block producer may employ in that case is to compute the dependency cones of all presently challenges blocks, and refuse to produce blocks that are fully or partially inside any such dependency cone. In that case, however, the block producer may also wish to check availability on the contested block themselves, and if it is contested create a rescue transaction.
 
-The other category of strategy is for transaction sending, particularly in the context of more complex state transition functions like that used in Ethereum. If a transaction only affects a few neighboring substates, then an index selection strategy as above will be able to provide easy and global transfer. However, what happens if an action needs to be performed that has wide-reaching effect, and it is impractical to put it into a single block? In this case, one option is to set up an ``asynchronous routing'' meta-protocol: if a transaction affects state $\sigma[i]$ but also needs to effect a change in $\sigma[j]$, then if it is acceptable for the latter change to be asynchronous we can have a message be passed through a ``network'' of contracts, first to a contract in a state neighboring $\sigma[i]$, then hopping progressively closer to $\sigma[j]$ during subsequent transaction executions until finally arriving at $\sigma[j]$ and effecting the desired change. Note that this is equivalent to the hypercubes \cite{hypercubes} strategy developed for Ethereum in 2014; but instead of being a core part of the protocol, the protocol has been abstracted even further out allowing hypercubes to simply be one of the many possible strategies that the protocol can lead to.
+The other category of strategy is for transaction sending, particularly in the context of more complex state transition functions like that used in Ethereum. If a transaction only affects a few neighboring substates, then an index selection strategy as above will be able to provide easy and global transfer. However, what happens if an action needs to be performed that has wide-reaching effect, and it is impractical to put it into a single block? In this case, one option is to set up an ``asynchronous routing'' meta-protocol: if a transaction affects state $\sigma[i]$ but also needs to effect a change in $\sigma[j]$, then if it is acceptable for the latter change to be asynchronous we can have a message be passed through a ``network'' of contracts, first to a contract in a state neighboring $\sigma[i]$, then hopping progressively closer to $\sigma[j]$ during subsequent transaction executions until finally arriving at $\sigma[j]$ and effecting the desired change. Note that this is equivalent to the hypercubes \citep{buterin_scalability_2014} strategy developed for Ethereum in 2014; but instead of being a core part of the protocol, the protocol has been abstracted even further out allowing hypercubes to simply be one of the many possible strategies that the protocol can lead to.
 
 If the primary purpose of a blockchain is to act as a currency system, then as long as sufficient liquidity exists one can get by with a very low amount of interoperability. For example, even if it is only possible to move funds between substates every 1000 blocks, and even then only through a single central ``hub state'' (which is assumed all nodes store as a strategy), that limited movement provides enough fungibility for the currency units in the various substates to maintain fungibility. Cross-substate payments can be done by means of various decentralized exchange protocols, treating the different substates as different currencies with the only difference being that the currency exchange rate will always remain equal to 1. However, it is debatable whether this approach is preferable to the other strategy described above of having block proposers select random $(i, j)$ pairs.
 
@@ -734,11 +766,11 @@ Finally, there is the protocol-level decision of how to maintain the divisions b
 
 \begin{itemize}
 \item
-Employ an adaptive algorithms, perhaps adapting Karger's minimal-cut algorithm \cite{karger}, in order to split and join substates over time. Note that this can be done at the strategy level, giving the top-level consensus the right to split and join substates arbitrarily, but making it economically efficient for them to make splits that create a minimal cut. One disadvantage of this approach is that if transaction fees are priced so as to disincentivize cross-substate activity, fees for specific operations become unpredictable since substates can be rearranged.
+Employ an adaptive algorithms, perhaps adapting Karger's minimal-cut algorithm \citep{karger_global_1993, stoer_simple_1997}, in order to split and join substates over time. Note that this can be done at the strategy level, giving the top-level consensus the right to split and join substates arbitrarily, but making it economically efficient for them to make splits that create a minimal cut. One disadvantage of this approach is that if transaction fees are priced so as to disincentivize cross-substate activity, fees for specific operations become unpredictable since substates can be rearranged.
 \item
 Create new substates every time existing substates get too large, and incentivize users that marginally care less about network effect to act in those substates by lowering transaction fee pricing. This removes the ability to make arbitrary splits, but also leads to unpredictable pricing since prices do need to go up to incentivize users away from high-activity substates - although the pricing would be far more even and less discretionary.
 \item
-Allow users to set the location of objects in the state with arbitrary fineness, but with increased cost for higher degrees of fineness. Hence, objects that need to be very close to each other can pay the cost for extreme co-location, whereas other objects can place themselves further apart. This is the strategy undertaken in Gavin Wood's fiber-chains proposal\cite{fiberchains}.
+Allow users to set the location of objects in the state with arbitrary fineness, but with increased cost for higher degrees of fineness. Hence, objects that need to be very close to each other can pay the cost for extreme co-location, whereas other objects can place themselves further apart. This is the strategy undertaken in Gavin Wood's fiber-chains proposal \citep{wood_blockchain_2015}.
 \end{itemize}
 
 \chapter{Further optimizations}
@@ -764,110 +796,115 @@ If one wants to go even further, one can allow the affected area of one block to
 
 For the second, the largest tradeoff is likely to be that between churn and security. If one can keep the same $m$ nodes validating the same substates for a longer period of time, eg. half an hour, one may be able to reduce network load. However, keeping a constant pool for too long makes the scheme more attackable.
 
-For the third, the most likely source of gains will be improvements in the underlying non-scalable consensus algorithm used to maintain consensus on the top-level state $\psi$. Inclusive blockchain protocols such as those developed by Sompolinsky and Zohar \cite{inclusive} are a potential route for minimizing disruption under ultra-fast block times, and such protocols can also be used for the fourth goal of mitigating the impact of reverts.
+For the third, the most likely source of gains will be improvements in the underlying non-scalable consensus algorithm used to maintain consensus on the top-level state $\psi$. Inclusive blockchain protocols such as those developed by \cite{lewenberg_inclusive_2015} are a potential route for minimizing disruption under ultra-fast block times, and such protocols can also be used for the fourth goal of mitigating the impact of reverts.
 
-For the fifth, an ideal goal would be to have a blockchain design which allows users to pick a point on the entire tradeoff space between cost and probability of failure, essentially capturing in the base protocol concepts like ``auditable computation'' \cite{auditable} (where computation is done by a third party by default, but if an auditor finds the third party provided an incorrect result the auditor can force the execution to be re-done on the blockchain and if the third party is indeed in the wrong it loses a security deposit from which the auditor will be able to claim a bounty).
+For the fifth, an ideal goal would be to have a blockchain design which allows users to pick a point on the entire tradeoff space between cost and probability of failure, essentially capturing in the base protocol concepts like ``auditable computation'' \citep{buterin_scalability_2014} (where computation is done by a third party by default, but if an auditor finds the third party provided an incorrect result the auditor can force the execution to be re-done on the blockchain and if the third party is indeed in the wrong it loses a security deposit from which the auditor will be able to claim a bounty).
 
 Finally, there is plenty of room for optimization in strategies, figuring out how validators can self-organize in order to maximize the expressivity of the state transition function in practice. The ideal goal is to present an interface to developers that ``just works'', providing a set of highly robust abstractions that achieve strong security bounds, freeing developers of the need to think about the underlying architecture, math and economics of the platform unless absolutely necessary. But this problem can be solved much later than the others, and solutions can much more easily continue to be iterated even after the underlying blockchain protocol is developed.
 
-\begin{thebibliography}{32}
+\medskip
 
-\bibitem{mmpetertodd}
-    Peter Todd on merge-mining, Dec 2013: \url{http://sourceforge.net/p/bitcoin/mailman/message/31796158/}
+\bibliographystyle{abbrvnat}
+\bibliography{scalability}
 
-\bibitem{coiledcoin}
-    What is the story behind the attack on CoiledCoin? (StackExchange, 2013): \url{http://bitcoin.stackexchange.com/questions/3472/what-is-the-story-behind-the-attack-on-coiledcoin}
-
-\bibitem{parallelcomputing}
-    Amdahl and Gustafson's laws and Bernstein's conditions for parallelizability (Wikipedia): \url{http://en.wikipedia.org/wiki/Parallel_computing#Amdahl.27s_law_and_Gustafson.27s_law}
-
-\bibitem{gmaxwell}
-    Gregory Maxwell and jl2012, Bitcointalk: \url{https://bitcointalk.org/index.php?topic=277389.45;wap2}
-
-\bibitem{auditable}
-    Scalability, Part 1: Building on top, Vitalik Buterin, September 2014: \url{https://blog.ethereum.org/2014/09/17/scalability-part-1-building-top/}
-
-\bibitem{lightning}
-    Lightning Network: \url{http://lightning.network/}
-
-\bibitem{zamfir}
-    Vlad Zamfir's Formalizing Decentralized Consensus, coming soon.
-
-\bibitem{piketty}
-    Thomas Piketty, Capital in the 21st Century: \url{http://www.amazon.com/Capital-Twenty-First-Century-Thomas-Piketty/dp/1491534656}
-
-\bibitem{bar}
-    BAR Fault Tolerance for Cooperative Services, Amitanand S. Aiyer et al: \url{http://cs.brown.edu/courses/csci2950-g/papers/bar.pdf}
-
-\bibitem{amiller}
-    Anonymous Byzantine Consensus from Moderately-Hard Puzzles: A Model for Bitcoin, Andrew Miller, Joseph J LaViola Jr: \url{https://socrates1024.s3.amazonaws.com/consensus.pdf}
-
-\bibitem{merkle}
-    Merkle trees (Wikipedia): \url{http://en.wikipedia.org/wiki/Merkle_tree}
-
-\bibitem{kademlia}
-    Kademlia: A Peer-to-peer Information System Based on the XOR Metric \url{http://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf}
-
-\bibitem{ipfs}
-    IPDS: \url{http://ipfs.io/}
-
-\bibitem{zamfirpoc}
-    Vlad Zamfir and Pavel Kravchenko's Proof of Custody: \url{https://docs.google.com/document/d/1F81ulKEZFPIGNEVRsx0H1gl2YRtf0mUMsX011BzSjnY/edit}
-
-\bibitem{ffterasurecode}
-    $O(N*polylog(N))$ Reed-solomon erasure codes via fast Fourier transforms: \url{http://arxiv.org/pdf/0907.1788.pdf}
-
-\bibitem{nxtinside}
-    nxtinside.org, describing the NXT generation signature algorithm: \url{http://nxtinside.org/inside-a-proof-of-stake-cryptocurrency-2/}
-
-\bibitem{snark}
-    Succinct Zero-Knowledge for a von Neumann Architecture, Eli ben Sasson et al, Aug 2014: \url{https://eprint.iacr.org/2013/879.pdf}
-
-\bibitem{schellingcoin}
-    SchellingCoin: A Zero-Trust Universal Data Feed, Vitalik Buterin, Mar 2014: \url{https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/}
-
-\bibitem{pepsilon}
-    The P + Epsilon Attack, Vitalik Buterin, Jan 2015: \url{https://blog.ethereum.org/2015/01/28/p-epsilon-attack/}
-
-\bibitem{sztorc}
-    Truthcoin: Trustless, Decentralized, Censorship-Proof, Incentive-Compatible, Scalable Cryptocurrency Prediction Marketplace, Paul Sztorc, Aug 2014: \url{http://www.truthcoin.info/papers/truthcoin-whitepaper.pdf}
-
-\bibitem{tendermint}
-    Tendermint: Consensus without mining, Jae Kwon: \url{http://tendermint.com/docs/tendermint.pdf}
-
-\bibitem{swanson}
-    Permissioned Distributed Ledger Systems, Tim Swanson: \url{http://www.ofnumbers.com/wp-content/uploads/2015/04/Permissioned-distributed-ledgers.pdf}
-
-\bibitem{ntrusign}
-    NTRUSign: Digital Signatures Using The NTRU Lattice, Jeffrey Hoffstein et al: \url{http://www.math.brown.edu/~jpipher/NTRUSign_RSA.pdf}
-
-\bibitem{hashladder}
-    Hash Ladders for Shorter Lamport Signatures, Karl Gluck: \url{https://gist.github.com/karlgluck/8412807}
-
-\bibitem{sphincs}
-    SPHINCS: Practical Stateless Hash-based Signatures, Daniel Bernstein et al: \url{http://sphincs.cr.yp.to/}
-
-\bibitem{econofcrime}
-    Economics of Crime, Erling Eide, Paul H Rubin, Joanna Mehlop Shepherd: \url{https://books.google.ca/books?id=gr95IhFHXHoC&pg=PA45}
-
-\bibitem{treechains}
-    Tree Chains, Peter Todd: \url{https://www.mail-archive.com/bitcoin-development@lists.sourceforge.net/msg04388.html}
-
-\bibitem{laplace}
-    Laplacian succession: \url{http://understandinguncertainty.org/node/225}
-
-\bibitem{hypercubes}
-    Scalability, Part 2: Hypercubes, Vitalik Buterin, October 2014: \url{http://www.reddit.com/r/ethereum/comments/2jvv5d/ethereum_blog_scalability_part_2_hypercubes/}
-
-\bibitem{karger}
-    Karger's minimal-cut algorithm, Wikipedia: \url{http://en.wikipedia.org/wiki/Karger%27s_algorithm}
-
-\bibitem{inclusive}
-    Inclusive Blockchain Protocols, Yoad Lewenberg, Yonatan Sompolinsky, Aviv Zohar: \url{http://fc15.ifca.ai/preproceedings/paper_101.pdf}
-
-\bibitem{fiberchains}
-    Blockchain Scalability: Chain Fibers Redux: \url{https://blog.ethereum.org/2015/04/05/blockchain-scalability-chain-fibers-redux/}
-
-\end{thebibliography}
+%\begin{thebibliography}{32}
+%
+%\bibitem{mmpetertodd}
+%    Peter Todd on merge-mining, Dec 2013: \url{http://sourceforge.net/p/bitcoin/mailman/message/31796158/}
+%
+%\bibitem{coiledcoin}
+%    What is the story behind the attack on CoiledCoin? (StackExchange, 2013): \url{http://bitcoin.stackexchange.com/questions/3472/what-is-the-story-behind-the-attack-on-coiledcoin}
+%
+%\bibitem{parallelcomputing}
+%    Amdahl and Gustafson's laws and Bernstein's conditions for parallelizability (Wikipedia): \url{http://en.wikipedia.org/wiki/Parallel_computing#Amdahl.27s_law_and_Gustafson.27s_law}
+%
+%\bibitem{gmaxwell}
+%    Gregory Maxwell and jl2012, Bitcointalk: \url{https://bitcointalk.org/index.php?topic=277389.45;wap2}
+%
+%\bibitem{auditable}
+%    Scalability, Part 1: Building on top, Vitalik Buterin, September 2014: \url{https://blog.ethereum.org/2014/09/17/scalability-part-1-building-top/}
+%
+%\bibitem{lightning}
+%    Lightning Network: \url{http://lightning.network/}
+%
+%\bibitem{zamfir}
+%    Vlad Zamfir's Formalizing Decentralized Consensus, coming soon.
+%
+%\bibitem{piketty}
+%    Thomas Piketty, Capital in the 21st Century: \url{http://www.amazon.com/Capital-Twenty-First-Century-Thomas-Piketty/dp/1491534656}
+%
+%\bibitem{bar}
+%    BAR Fault Tolerance for Cooperative Services, Amitanand S. Aiyer et al: \url{http://cs.brown.edu/courses/csci2950-g/papers/bar.pdf}
+%
+%\bibitem{amiller}
+%    Anonymous Byzantine Consensus from Moderately-Hard Puzzles: A Model for Bitcoin, Andrew Miller, Joseph J LaViola Jr: \url{https://socrates1024.s3.amazonaws.com/consensus.pdf}
+%
+%\bibitem{merkle}
+%    Merkle trees (Wikipedia): \url{http://en.wikipedia.org/wiki/Merkle_tree}
+%
+%\bibitem{kademlia}
+%    Kademlia: A Peer-to-peer Information System Based on the XOR Metric \url{http://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf}
+%
+%\bibitem{ipfs}
+%    IPDS: \url{http://ipfs.io/}
+%
+%\bibitem{zamfirpoc}
+%    Vlad Zamfir and Pavel Kravchenko's Proof of Custody: \url{https://docs.google.com/document/d/1F81ulKEZFPIGNEVRsx0H1gl2YRtf0mUMsX011BzSjnY/edit}
+%
+%\bibitem{ffterasurecode}
+%    $O(N*polylog(N))$ Reed-solomon erasure codes via fast Fourier transforms: \url{http://arxiv.org/pdf/0907.1788.pdf}
+%
+%\bibitem{nxtinside}
+%    nxtinside.org, describing the NXT generation signature algorithm: \url{http://nxtinside.org/inside-a-proof-of-stake-cryptocurrency-2/}
+%
+%\bibitem{snark}
+%    Succinct Zero-Knowledge for a von Neumann Architecture, Eli ben Sasson et al, Aug 2014: \url{https://eprint.iacr.org/2013/879.pdf}
+%
+%\bibitem{schellingcoin}
+%    SchellingCoin: A Zero-Trust Universal Data Feed, Vitalik Buterin, Mar 2014: \url{https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/}
+%
+%\bibitem{pepsilon}
+%    The P + Epsilon Attack, Vitalik Buterin, Jan 2015: \url{https://blog.ethereum.org/2015/01/28/p-epsilon-attack/}
+%
+%\bibitem{sztorc}
+%    Truthcoin: Trustless, Decentralized, Censorship-Proof, Incentive-Compatible, Scalable Cryptocurrency Prediction Marketplace, Paul Sztorc, Aug 2014: \url{http://www.truthcoin.info/papers/truthcoin-whitepaper.pdf}
+%
+%\bibitem{tendermint}
+%    Tendermint: Consensus without mining, Jae Kwon: \url{http://tendermint.com/docs/tendermint.pdf}
+%
+%\bibitem{swanson}
+%    Permissioned Distributed Ledger Systems, Tim Swanson: \url{http://www.ofnumbers.com/wp-content/uploads/2015/04/Permissioned-distributed-ledgers.pdf}
+%
+%\bibitem{ntrusign}
+%    NTRUSign: Digital Signatures Using The NTRU Lattice, Jeffrey Hoffstein et al: \url{http://www.math.brown.edu/~jpipher/NTRUSign_RSA.pdf}
+%
+%\bibitem{hashladder}
+%    Hash Ladders for Shorter Lamport Signatures, Karl Gluck: \url{https://gist.github.com/karlgluck/8412807}
+%
+%\bibitem{sphincs}
+%    SPHINCS: Practical Stateless Hash-based Signatures, Daniel Bernstein et al: \url{http://sphincs.cr.yp.to/}
+%
+%\bibitem{econofcrime}
+%    Economics of Crime, Erling Eide, Paul H Rubin, Joanna Mehlop Shepherd: \url{https://books.google.ca/books?id=gr95IhFHXHoC&pg=PA45}
+%
+%\bibitem{treechains}
+%    Tree Chains, Peter Todd: \url{https://www.mail-archive.com/bitcoin-development@lists.sourceforge.net/msg04388.html}
+%
+%\bibitem{laplace}
+%    Laplacian succession: \url{http://understandinguncertainty.org/node/225}
+%
+%\bibitem{hypercubes}
+%    Scalability, Part 2: Hypercubes, Vitalik Buterin, October 2014: \url{http://www.reddit.com/r/ethereum/comments/2jvv5d/ethereum_blog_scalability_part_2_hypercubes/}
+%
+%\bibitem{karger}
+%    Karger's minimal-cut algorithm, Wikipedia: \url{http://en.wikipedia.org/wiki/Karger%27s_algorithm}
+%
+%\bibitem{inclusive}
+%    Inclusive Blockchain Protocols, Yoad Lewenberg, Yonatan Sompolinsky, Aviv Zohar: \url{http://fc15.ifca.ai/preproceedings/paper_101.pdf}
+%
+%\bibitem{fiberchains}
+%    Blockchain Scalability: Chain Fibers Redux: \url{https://blog.ethereum.org/2015/04/05/blockchain-scalability-chain-fibers-redux/}
+%
+%\end{thebibliography}
 
 \end{document}

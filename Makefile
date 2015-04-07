@@ -12,7 +12,7 @@ version.tex:
 
 scalability.pdf: scalability.tex $(FIGURES) version.tex
 	$(LATEX) $<
-	#$(BIBTEX) $(basename $@)
+	$(BIBTEX) $(basename $@)
 	$(LATEX) $<
 	$(LATEX) $<
 	$(LATEX) $<

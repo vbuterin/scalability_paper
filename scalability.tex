@@ -290,7 +290,7 @@ A cryptoeconomic state machine is \emph{scalable} if, assuming each individual u
 It is not possible to achieve scalability for arbitrary state transition functions.
 \end{lem}
 \begin{proof}
-Suppose the state transition function $\sigma + \tau = H(\sigma + \tau)$ for some hash function. This is clearly unparallelizable. Hence, the transaction rate is bounded above by the serial computational power of one node.
+Suppose the state transition function $\sigma + \tau = H(\sigma + \tau)$ for some hash function \comment{This doesn't make any sense!  Why are we assuming that $\sigma + \tau$ is a fixed point for a hashing function???}. This is clearly unparallelizable. Hence, the transaction rate is bounded above by the serial computational power of one node.
 \end{proof}
 
 \begin{note}
@@ -300,12 +300,16 @@ Because of the previous lemma, we can see that the introduction of scalability w
 
 \chapter{Cryptographic and Cryptoeconomic Primitives}
 
+\comment{I don't really see the point of this chapter.  It's not about blockchain scaling, it doesn't mention social choice theory problems inherent in proof of stake, and it detracts from the rest of the book.}
+
 \begin{defn}[Sampling function]
 A \emph{sampling function} is a function $SAMPLE(W, k, m) \rightarrow {u_1 \ldots u_m}$ that takes a weight function $W$, a salt $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users.
 \end{defn}
 
+\comment{The above is conventionally called ``Weighted Sampling With Replacement''.  The example below is confusing and not very performant.  I would recommend just pointing readers to Knuth's ``Art of Computer Programming'', Volume II,  \S 3.4.2.}
+
 \begin{exmp}
-Arrange all users $u_1 \ldots u_n$ in order of public key, and assign the range $[\sum_{i=1}^{j-1} W(u_i)...\sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 <= j <= n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
+Arrange all users $u_1 \ldots u_n$ in order of public key, and assign the range $[\sum_{i=1}^{j-1} W(u_i) \ldots \sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 \leq j \leq n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
 \end{exmp}
 
 \begin{defn}[Merkle tree protocol]
@@ -330,9 +334,9 @@ A \emph{Merkle branch} is the tuple $(V, \pi)$.
 \begin{defn}[Cryptoeconomically secure entropy source]
 A cryptoeconomically secure entropy source is a protocol inside of a state transition function in a cryptoeconomic state machine that maintains an internal, regularly changing, value $v \in D$ for some domain $D$ (usually $\{0,1\}^{256}$) with the following desired properties:
 \begin{itemize}
-\item \emph{Unpredictablity}: there exists a value $M$ such that at time $t_0 + M$ the probability distribution of $v$ conditional only on information available at time $t_0$ is statistically indistinguishable from the random distribution. That is, an agent with only information available at time $t_0$ cannot determine a value $x$ such that $v = x$ with probability that is not in the range $[\frac{1 - \epsilon}{|D|}, \frac{1 + \epsilon}{|D|}]$ for cryptographically negligible $\epsilon$.
+\item \emph{Unpredictablity}: there exists a value $M$ such that at time $t_0 + M$ the probability distribution of $v$ conditional only on information available at time $t_0$ is statistically indistinguishable from the random distribution \comment{You mean *uniform* distribution?  Why not just say ``must act like an unbiased uniform random number generator that can pass the diehard tests'' although as we all know those are a massive PITA\ldots}. That is, an agent with only information available at time $t_0$ cannot determine a value $x$ such that $v = x$ with probability that is not in the range $[\frac{1 - \epsilon}{|D|}, \frac{1 + \epsilon}{|D|}]$ for cryptographically negligible $\epsilon$.
 \item \emph{Uninfluenceability (I)}: For any predicate $P$ which the value $v$ would have at some given future time with probability $p$ assuming everyone correctly follows the specified protocol, the cost of making the value have that predicate with probability $p' > p$ is bounded below by $b * L * (p' - p)$ where $b$ is a constant independent of $P$ and $L$ is some economic metric of activity in the state machine.
-\item \emph{Uninfluenceability (II)}: There exist constants $k$ and $b$ such that for any predicate $P$ which the value $v$ would have at some given future time with probability $p$ assuming everyone honestly follows the protocol, an actor controlling less than $k$ of the weight can increase the probability to at most $p' = p * (1 + b)$.
+\item \emph{Uninfluenceability (II)}: There exist constants $k$ and $b$ such that for any predicate $P$ which the value $v$ would have at some given future time with probability $p$ assuming everyone honestly follows the protocol, an actor controlling less than $k$ of the weight can increase the probability to at most $p' = p \times (1 + b)$.
 \end{itemize}
 \end{defn}
 
@@ -368,7 +372,7 @@ The NXT algorithm described above satisfies the conditions for being a cryptoeco
 \begin{proof}
 To prove unpredictability, we note that the NXT blockchain produces a block every minute, and so the update $v \leftarrow sha256(v, V(\beta))$ takes place once a minute. During each round of updating, there is a probability $1 - p_o(60)$ that the primary signer will be online, and $p_o(60)$ that the signer will be offline and thus a secondary signer will need to produce the block. Hence, after $\frac{1}{-log(p_o(60))}$ blocks, there is a probability $p \approx \frac{1}{2}$ that the resulting value will be the ``default value'' obtained from updating $v$ with the primary signers' public keys at each block, and a $p \approx \frac{1}{2}$ probability that the resulting value will be different. We model 512 iterations of this process as a tree, with all leaves being probability distributions over sequences of 512 public keys of signers, where all probability distributions are disjoint (ie. no sequence appears with probability greater than zero in multiple leaves). By random-oracle assumption of $sha256$, we thus know that we have a set of $2^{512}$ independently randomly sampled probability distributions from $\{0,1\}^{256}$, and so each value will be selected an expected $\{0,1\}^{256}$ times, with standard deviation $2^{128}$. Hence, the probability distribution is statistically indistinguishable from a random distribution.
  
-To show that the first uninfluenceability criterion holds true, note that the only way to manipulate the result is for the block proposer to disappear, leading to another proposer taking over. However, this action is costly for the proposer as the proposer loses a block reward. The optimal strategy is to disappear with probability $0 < q <= 1$ only when the predicate will be unsatisfied with the proposer participating but will be satisfied with the next proposer partipating; if a predicate has probability $p$ this entails disappearing $p * (1-p) * q$ of the time, meaning that the predicate will be satisfied $p + p * (1-p) * q$ of the time instead of $p$ of the time, a probability increment of $p * (1-p) * q$ will have a cost of $p * (1-p) * q * R$ if $R$ is the signing reward (whose real value is proportional to the quantity of transaction fees, a reasonable metric of economic activity). Hence, the desired condition holds true with $b = 1$.
+To show that the first uninfluenceability criterion holds true, note that the only way to manipulate the result is for the block proposer to disappear, leading to another proposer taking over. However, this action is costly for the proposer as the proposer loses a block reward. The optimal strategy is to disappear with probability $0 < q \leq 1$ only when the predicate will be unsatisfied with the proposer participating but will be satisfied with the next proposer partipating; if a predicate has probability $p$ this entails disappearing $p * (1-p) * q$ of the time, meaning that the predicate will be satisfied $p + p * (1-p) * q$ of the time instead of $p$ of the time, a probability increment of $p * (1-p) * q$ will have a cost of $p * (1-p) * q * R$ if $R$ is the signing reward (whose real value is proportional to the quantity of transaction fees, a reasonable metric of economic activity). Hence, the desired condition holds true with $b = 1$.
 
 To show that the second uninfluenceability criterion holds true, note that when one is not the signer, one has no influence on the entropy, and when one is the signer one has the ability to not sign and instead defer to the next signer. Hence, an attacker controlling $\frac{1}{k}$ of all signing slots will be able to defer to the second signer $\frac{1}{k}$ of the time, to the third signer $\frac{1}{k^2}$ of the time (by being in the first two slots simultaneously), etc, so in total such an attacker will on average be able to choose between $1 + \frac{1}{k-1}$ values and thus multiply the probability of a desired predicate by a factor of $1 + \frac{1}{k-1}$. If the attacker controls $\frac{1}{3}$ of all signing slots, the result will thus be increasing the probablity by a factor of $\frac{3}{2}$.
 \end{proof}
@@ -461,6 +465,8 @@ Kademlia \citep{maymounkov_kademlia:_2002} is an example of a distributed hash t
 \end{exmp}
 
 \chapter{Global Variables}
+
+\comment{This chapter is too small, perhaps you should lump it in with the definitions chapter}
 
 In the rest of this document we will use the following variables:
 
@@ -647,6 +653,8 @@ One way to try to solve both attacks above is to require every valid transaction
 \begin{exmp}[Payment denial attack]
 An attacker creates a block with an unavailable transaction which appears to modify another party's account (or spend their UTXO). This prevents the other party from ever spending their funds, because they can no longer prove validity.
 \end{exmp}
+
+\comment{The statement below is false.  Kolmogorov complexity is dependent on the definition of a universal Turing Machine $T$, and the exact Kolmogorov complexity of a string depends on the implementation details of that Turing Machine (this is part of the definition \url{http://en.wikipedia.org/wiki/Kolmogorov_complexity\#Definition}).  So I'd say just get rid of it, Kolmogorov complexity isn't an important concept for blockchain scaling anyway.}
 
 \begin{note}
 Even zk-SNARK protocols cannot easily get around the above problem, as it is information-theoretically impossible for any protocol regardless of cryptographic assumptions to fully specify the set of accounts that are modified in a particular super-block in $O(N)$ space if the set itself has $\omega(N)$ Kolmogorov complexity.
@@ -855,105 +863,5 @@ Finally, there is plenty of room for optimization in strategies, figuring out ho
 
 \bibliographystyle{abbrvnat}
 \bibliography{scalability}
-
-%\begin{thebibliography}{32}
-%
-%\bibitem{mmpetertodd}
-%    Peter Todd on merge-mining, Dec 2013: \url{http://sourceforge.net/p/bitcoin/mailman/message/31796158/}
-%
-%\bibitem{coiledcoin}
-%    What is the story behind the attack on CoiledCoin? (StackExchange, 2013): \url{http://bitcoin.stackexchange.com/questions/3472/what-is-the-story-behind-the-attack-on-coiledcoin}
-%
-%\bibitem{parallelcomputing}
-%    Amdahl and Gustafson's laws and Bernstein's conditions for parallelizability (Wikipedia): \url{http://en.wikipedia.org/wiki/Parallel_computing#Amdahl.27s_law_and_Gustafson.27s_law}
-%
-%\bibitem{gmaxwell}
-%    Gregory Maxwell and jl2012, Bitcointalk: \url{https://bitcointalk.org/index.php?topic=277389.45;wap2}
-%
-%\bibitem{auditable}
-%    Scalability, Part 1: Building on top, Vitalik Buterin, September 2014: \url{https://blog.ethereum.org/2014/09/17/scalability-part-1-building-top/}
-%
-%\bibitem{lightning}
-%    Lightning Network: \url{http://lightning.network/}
-%
-%\bibitem{zamfir}
-%    Vlad Zamfir's Formalizing Decentralized Consensus, coming soon.
-%
-%\bibitem{piketty}
-%    Thomas Piketty, Capital in the 21st Century: \url{http://www.amazon.com/Capital-Twenty-First-Century-Thomas-Piketty/dp/1491534656}
-%
-%\bibitem{bar}
-%    BAR Fault Tolerance for Cooperative Services, Amitanand S. Aiyer et al: \url{http://cs.brown.edu/courses/csci2950-g/papers/bar.pdf}
-%
-%\bibitem{amiller}
-%    Anonymous Byzantine Consensus from Moderately-Hard Puzzles: A Model for Bitcoin, Andrew Miller, Joseph J LaViola Jr: \url{https://socrates1024.s3.amazonaws.com/consensus.pdf}
-%
-%\bibitem{merkle}
-%    Merkle trees (Wikipedia): \url{http://en.wikipedia.org/wiki/Merkle_tree}
-%
-%\bibitem{kademlia}
-%    Kademlia: A Peer-to-peer Information System Based on the XOR Metric \url{http://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf}
-%
-%\bibitem{ipfs}
-%    IPDS: \url{http://ipfs.io/}
-%
-%\bibitem{zamfirpoc}
-%    Vlad Zamfir and Pavel Kravchenko's Proof of Custody: \url{https://docs.google.com/document/d/1F81ulKEZFPIGNEVRsx0H1gl2YRtf0mUMsX011BzSjnY/edit}
-%
-%\bibitem{ffterasurecode}
-%    $O(N*polylog(N))$ Reed-solomon erasure codes via fast Fourier transforms: \url{http://arxiv.org/pdf/0907.1788.pdf}
-%
-%\bibitem{nxtinside}
-%    nxtinside.org, describing the NXT generation signature algorithm: \url{http://nxtinside.org/inside-a-proof-of-stake-cryptocurrency-2/}
-%
-%\bibitem{snark}
-%    Succinct Zero-Knowledge for a von Neumann Architecture, Eli ben Sasson et al, Aug 2014: \url{https://eprint.iacr.org/2013/879.pdf}
-%
-%\bibitem{schellingcoin}
-%    SchellingCoin: A Zero-Trust Universal Data Feed, Vitalik Buterin, Mar 2014: \url{https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/}
-%
-%\bibitem{pepsilon}
-%    The P + Epsilon Attack, Vitalik Buterin, Jan 2015: \url{https://blog.ethereum.org/2015/01/28/p-epsilon-attack/}
-%
-%\bibitem{sztorc}
-%    Truthcoin: Trustless, Decentralized, Censorship-Proof, Incentive-Compatible, Scalable Cryptocurrency Prediction Marketplace, Paul Sztorc, Aug 2014: \url{http://www.truthcoin.info/papers/truthcoin-whitepaper.pdf}
-%
-%\bibitem{tendermint}
-%    Tendermint: Consensus without mining, Jae Kwon: \url{http://tendermint.com/docs/tendermint.pdf}
-%
-%\bibitem{swanson}
-%    Permissioned Distributed Ledger Systems, Tim Swanson: \url{http://www.ofnumbers.com/wp-content/uploads/2015/04/Permissioned-distributed-ledgers.pdf}
-%
-%\bibitem{ntrusign}
-%    NTRUSign: Digital Signatures Using The NTRU Lattice, Jeffrey Hoffstein et al: \url{http://www.math.brown.edu/~jpipher/NTRUSign_RSA.pdf}
-%
-%\bibitem{hashladder}
-%    Hash Ladders for Shorter Lamport Signatures, Karl Gluck: \url{https://gist.github.com/karlgluck/8412807}
-%
-%\bibitem{sphincs}
-%    SPHINCS: Practical Stateless Hash-based Signatures, Daniel Bernstein et al: \url{http://sphincs.cr.yp.to/}
-%
-%\bibitem{econofcrime}
-%    Economics of Crime, Erling Eide, Paul H Rubin, Joanna Mehlop Shepherd: \url{https://books.google.ca/books?id=gr95IhFHXHoC&pg=PA45}
-%
-%\bibitem{treechains}
-%    Tree Chains, Peter Todd: \url{https://www.mail-archive.com/bitcoin-development@lists.sourceforge.net/msg04388.html}
-%
-%\bibitem{laplace}
-%    Laplacian succession: \url{http://understandinguncertainty.org/node/225}
-%
-%\bibitem{hypercubes}
-%    Scalability, Part 2: Hypercubes, Vitalik Buterin, October 2014: \url{http://www.reddit.com/r/ethereum/comments/2jvv5d/ethereum_blog_scalability_part_2_hypercubes/}
-%
-%\bibitem{karger}
-%    Karger's minimal-cut algorithm, Wikipedia: \url{http://en.wikipedia.org/wiki/Karger%27s_algorithm}
-%
-%\bibitem{inclusive}
-%    Inclusive Blockchain Protocols, Yoad Lewenberg, Yonatan Sompolinsky, Aviv Zohar: \url{http://fc15.ifca.ai/preproceedings/paper_101.pdf}
-%
-%\bibitem{fiberchains}
-%    Blockchain Scalability: Chain Fibers Redux: \url{https://blog.ethereum.org/2015/04/05/blockchain-scalability-chain-fibers-redux/}
-%
-%\end{thebibliography}
 
 \end{document}

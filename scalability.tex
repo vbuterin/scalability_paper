@@ -12,6 +12,8 @@
     urlcolor=black
 }
 
+\newcommand{\comment}[1]{\textcolor{red}{\textit{#1}}}
+
 \usepackage{caption}
 \usepackage{subcaption}
 
@@ -61,6 +63,13 @@
 
 \chapter{Introduction}
 
+\comment{I have to point out that all of this talk of scalability is premature -- very little effort has been put into making the existing Ethereum platform performant.  I can point out the following optimizations.
+\begin{enumerate}
+\item Demand that nodes not use leveldb, and instead keep the entire Merkle Tree in RAM.  Even after 6 years of bit coin operation, a high-end computer with 128 GB of RAM could keep the entire chain in memory this way.  This gives a $1000$X speedup over disk-based solutions.  Tendermint is already doing this.
+\item The EVM is needlessly abstract.  There's more than a 10X speedup possible by just using little-endian, 64 bit arithmetic (cell sizes can remain 256 bits).  Likewise, the platform desperately needs conventional instructions like bitshift.  If you ran a SchellingCoin amongst the developers, you'd find that everyone would agree that these pointlessly slow down the platform.  Again, tender mint is already doing this.
+\item Recently, a ``keep the change'' opcode was proposed.  Why not *always* keep the change?  That way, the JIT wouldn't really need to count opcodes, and you can get another 10X performance boost.  Tendermint plans to do this once they get support for the JIT.  This provides at least an additional 10X speedup, on top of the 100X speedup from JIT.
+\end{enumerate}}
+
 Currently, all blockchain consensus protocols that are actively in use have a critical limitation: every node in the network must process every transaction. Although this requirement ensures a very strong guarantee of security, making it all but impossible for an attacker even with control over every node participating in the consensus process to convince the network of the validity of an invalid transaction, it comes at a heavy cost: every blockchain protocol that works in this way is forced to choose between limiting itself to a low maximum transaction throughput, with a resulting high per-transaction cost, and allowing a high degree of centralization.
 
 What might perhaps seem like a natural solution, splitting the relevant data over a thousand blockchains, has the two fundamental problems that it (i) decreases security, to the point where the security of \emph{each individual blockchain} on average does not grow \emph{at all} as total usage \emph{of the ecosystem} increases, and (ii) massively reduces the potential for interoperability. Other approaches, like merge-mining, seem to have stronger security, though in practice such approaches are either very weak in more subtle ways \citep{todd_re:_2013} - and indeed, merged mined blockchains have successfully been attacked\citep{piasecki_what_2012} - or simply fail to solve scalability, requiring every consensus participant to process every blockchain and thus every transaction anyway.
@@ -69,11 +78,21 @@ There are several reasons why scalable blockchain protocols have proven to be su
 
 This paper proposes another set of strategies for achieving scalability, as well as some formalisms that can be used when discussing and comparing scalable blockchain protocols. Generally, the strategies revolve around a "sample-and-fallback" game: in order for any particular block to be valid, require it to be approved by a randomly selected sample of validators, and in case a bad block does come through employ a mechanism in which a node can challenge invalid blocks, reverting the harmful transactions and transferring the malfeasant validators' security deposit to the challengers as a reward unless the challenge is answered by a confirmation of validity from a much greater number of validators. Theoretically, under a Byzantine-fault-tolerant model of security, fallback is unnecessary; sampling only is sufficient. However, if we are operating in an anonymous-validator environment, then it is also considered desirable to have a hard economic guarantee of the minimum quantity of funds that needs to be destroyed in order to cause a certain level of damage to the network; in that case, in order to make the economic argument work we use fallback as a sort of incentivizer-of-last-resort, making cooperation the only subgame-perfect equilibrium.
 
+\comment{Subgame perfect equilibria are not terribly stable.  For more stable equilibria, you might look at ``Evolutionarily Stable Strategies'': \url{http://en.wikipedia.org/wiki/Evolutionarily_stable_strategy}.  However, since all of this is assuming Proof of Stake voting games, you should be looking for ``Coalition proof Nash Equilibria'' \url{http://en.wikipedia.org/wiki/Coalition-proof_Nash_equilibrium}}.
+
 The particular advantage that our designs provide is a very high degree of generalization and abstraction; although other schemes using technologies like auditable computation\citep{buterin_scalability_2014} and micropayment channels\citep{poon_bitcoin_2015} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs require no specific properties of the underlying state transition function except for the demand that most state changes are in some sense ``localized''.
 
 Our basic designs allow for a network consisting solely of nodes bounded by $O(N)$ computational power to process a transaction load of $O(N^{2-\epsilon})$ (we generally use $O(N^\epsilon)$ to denote polylogarithmic terms for simplicity), under both Byzantine-fault-tolerant and economic security models; we then also propose an experimental ``stacking'' strategy for achieving arbitrary scalability guarantees up to a maximum of $O(exp(N/k))$ transactional load, although we recommend that for simplicity implementers attempt to perfect the $O(N^{2-\epsilon})$ designs first.
 
 \chapter{Definitions}
+
+\comment{As Rick Dudley and I have pointed out various times, this work is woefully ignorant of 30 years of scholarship on distributed systems.  The authors need to seriously look at Lamport signatures (\url{http://en.wikipedia.org/wiki/Lamport_signature}) and vector clocks (\url{http://en.wikipedia.org/wiki/Vector_clock}), since they are unnecessarily reinventing distributed system theory (not to mention game theory and social choice theory).\\
+\\
+Likewise, the $SAFEAPPLY$ stuff suggests the authors would do well to study software transactional memory: \url{http://research.microsoft.com/en-us/um/people/simonpj/papers/stm/stm.pdf}
+\\
+Now, if the authors had concrete implementations, I'd say that revisiting conventional theory might not be necessary. But this work doesn't give any hints as to practical application, so I don't see much excuse for poor scholarship. The authors have been found guilty, over and over, of over indulging in the ``Not Invented Here'' fallacy that programmers often fall prey to.\\
+\\
+That being said, as I have already pointed out, there are many orders of magnitude of performance improvement possible without resorting to any of this, so I'd like to see those addressed first while the scholarship here catches up.}
 
 \begin{defn}[State]
 A \emph{state} is a piece of data.
@@ -86,6 +105,12 @@ A \emph{transaction} is a piece of data. A transaction typically includes a cryp
 \begin{defn}[State Transition Function]
 A \emph{state transition function} is a function $APPLY(\sigma, \tau) \rightarrow \sigma' \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}. A \emph{safe state transition function} $SAFE(APPLY) = APPLY'$ is defined by $APPLY'(\sigma, \tau) = \{\sigma \; if \; APPLY(\sigma, \tau) = \varnothing \; else \; APPLY(\sigma, \tau)\}$.
 \end{defn}
+
+\comment{I haven't a clue what the above means.  By the axiom of regularity (\url{http://en.wikipedia.org/wiki/Axiom_of_regularity}), we know that $\varnothing \neq \{\varnothing\}$, so $APPLY(\_,\_) \neq \varnothing$ ever, by definition.  Can the authors clear up their notation and maybe provide some sort of example or something?\\
+\\
+Sometimes computer scientists use $\bot$ to denote failure, are the authors trying to use $\varnothing$ to represent failure?  If so this paper would be more clear if the authors stated so clearly, in prose. \\
+\\
+  Please provide some justification for $SAFEAPPLY$.  Is $SAFEAPPLY$ like the $\langle p ? \rangle$ modality in propositional dynamic logic or something? (for a primer propositional dynamic logic, see Fischer and Ladner's 1977 paper on the subject: \url{http://ac.els-cdn.com/0022000079900461/1-s2.0-0022000079900461-main.pdf?_tid=0cdd26e2-dcd1-11e4-adfe-00000aab0f01&acdnat=1428375295_b2bf3b685167e20fe37de6e4ec97f650})}
 
 For simplicity, we use the following notation:
 
@@ -101,8 +126,10 @@ Given an ordered list $T = [\tau_1, \tau_2, \tau_3...]$ and a state $\sigma$, we
 \item
 T is \emph{valid in the context of $\sigma$} if $T = T \setminus \sigma$
 \item
-$[n]$ is the set $\{1, 2, 3..... n\}$
+$[n]$ is the set $\{1, 2, 3, \ldots, n\}$ \comment{Why aren't we starting at 0????}
 \end{itemize}
+
+\comment{This whole section would be easier to swallow if the authors had an example or something of a system that did any of this.}
 
 \begin{defn}[Replay-immunity]
 A state transition function is \emph{replay-immune} if, for any $\sigma$, $\tau$ and $T$, $\sigma + \tau + T + \tau = \varnothing$. Generally, we assume that all state transition functions used in consensus protocols are replay-immune; otherwise, the protocol is almost certainly vulnerable to either exploits or denial of service attacks.
@@ -117,7 +144,7 @@ Two transactions or lists of transactions $T_1$, $T_2$ are \emph{commutative in 
 \end{defn}
 
 \begin{defn}[Partitioning scheme]
-A \emph{partitioning scheme} is a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 ... \sigma_n)$ for a fixed $n$. For simplicity, we use $\sigma[i] = P(\sigma)[i]$, and if S is a set, $\sigma[S] = \{i: P(\sigma)[i] \; for \; i \in S\}$. An individual value $\sigma[i]$ will be called a \emph{substate}, and a value $i$ will be called a \emph{substate index}.
+A \emph{partitioning scheme} is a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 \ldots \sigma_n)$ for a fixed $n$. For simplicity, we use $\sigma[i] = P(\sigma)[i]$, and if S is a set, $\sigma[S] = \{i: P(\sigma)[i] \; for \; i \in S\}$. An individual value $\sigma[i]$ will be called a \emph{substate}, and a value $i$ will be called a \emph{substate index}.
 \end{defn}
 
 \begin{defn}[Affected area]
@@ -169,7 +196,7 @@ The set of \emph{ancestors} of a state $\sigma$ is recursively defined via $ANC(
 \end{defn}
 
 \begin{defn}[Weight function]
-A \emph{weight function} is a function $W(u, \sigma)$ on the set of users $u_1 ... u_n$ (each of which is assumed to have a private and public key) in the context of a state $\sigma$, such that for all users in the network, $\sum_{i=0}^n W(u_i, \sigma) = 1$. ``$k$ of all weight'' will be used to denote the idea of a subset of users such that the sum of their weights is $k$. 
+A \emph{weight function} is a function $W(u, \sigma)$ on the set of users $u_1 \ldots u_n$ (each of which is assumed to have a private and public key) in the context of a state $\sigma$, such that for all users in the network, $\sum_{i=0}^n W(u_i, \sigma) = 1$. ``$k$ of all weight'' will be used to denote the idea of a subset of users such that the sum of their weights is $k$. 
 \end{defn}
 
 \begin{note}
@@ -181,7 +208,7 @@ A \emph{state root function} is a collision-proof preimage-proof function $R(\si
 \end{defn}
 
 \begin{defn}[Partition-friendliness]
-A state root function is partition-friendly with respect to a particular partitioning scheme if one can compute $R(\sigma)$ by knowing only $R(\sigma[0]), R(\sigma[1]) ... R(\sigma[n])$. 
+A state root function is partition-friendly with respect to a particular partitioning scheme if one can compute $R(\sigma)$ by knowing only $R(\sigma[0]), R(\sigma[1]) \ldots R(\sigma[n])$. 
 \end{defn}
 
 \begin{assm}
@@ -253,6 +280,8 @@ The \emph{validators} in a cryptoeconomic state machine are either (i) the users
 There exists some constant $b$ such that at least $b * L$ worth of economic power is concentrated in the hands of either individuals or groups of individuals capable of coordination that each have access to at least $\frac{b * L}{N^{1-\epsilon}}$ funds \citep{piketty_capital_2014}.
 \end{assm}
 
+\comment{Nobody in the real world cares about Kolmogorov complexity.  I suggest getting rid of all mention of it, because it's just confusing.  It's undecidable (in particular, $\Sigma^0_1$), so nobody can actually calculate it anyway.  For a refresher on theory of computation, see wikipedia: \url{http://en.wikipedia.org/wiki/Arithmetical_hierarchy}.}
+
 \begin{defn}[Scalability]
 A cryptoeconomic state machine is \emph{scalable} if, assuming each individual user has computational power, storage and bandwidth bounded above by $N$, the state machine can process $\omega(N)$ (ie. strictly greater than $O(N)$) transactions (with combined Kolmogorov complexity $\omega(N)$) and operate on states of size and Kolmogorov complexity $\omega(N)$.
 \end{defn}
@@ -272,11 +301,11 @@ Because of the previous lemma, we can see that the introduction of scalability w
 \chapter{Cryptographic and Cryptoeconomic Primitives}
 
 \begin{defn}[Sampling function]
-A \emph{sampling function} is a function $SAMPLE(W, k, m) \rightarrow {u_1 ... u_m}$ that takes a weight function $W$, a salt $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users.
+A \emph{sampling function} is a function $SAMPLE(W, k, m) \rightarrow {u_1 \ldots u_m}$ that takes a weight function $W$, a salt $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users.
 \end{defn}
 
 \begin{exmp}
-Arrange all users $u_1 ... u_n$ in order of public key, and assign the range $[\sum_{i=1}^{j-1} W(u_i)...\sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 <= j <= n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
+Arrange all users $u_1 \ldots u_n$ in order of public key, and assign the range $[\sum_{i=1}^{j-1} W(u_i)...\sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 <= j <= n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
 \end{exmp}
 
 \begin{defn}[Merkle tree protocol]
@@ -388,7 +417,7 @@ SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a forma
 
 \begin{note}
 
-% TODO: This analysis is pointlessly abstract; a sobering analysis would point out that the Augur has (1) a "Trust" presale and (2) is weighted via bit coin.  This naturally means that VCs or financiers with lots of bit coin holdings can use Augur as a distributed, "plausible deniability" oracle for publishing copy right material on a blockchain.  Such financiers are not interested in this pie-in-the-sky non-cooperative game theoretic analyses but a real-world analysis on their voting power.
+\comment{This analysis is totally wrong. a sobering analysis would point out that the Augur is going to have a "Trust" presale.  Since investors will naturally follow a pareto distribution, so will the initial allocation of trust.  So this analysis where all parties are assumed to have equal voting power is totally bogus -- an honest analysis would model voting power as following a Pareto distribution.  So I'd throw this section away, since it's totally bogus.}
 
 There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of \emph{TruthCoin}-style counter-coordination \citep{sztorc_trustless_2014}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit.  This situation is presented in Figure \ref{fig:unadulterated_truthcoin}. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe, presented in Figure \ref{fig:bribed_truthcoin}.
 
@@ -471,7 +500,7 @@ A \emph{block} is a package containing:
         \item
         $AN$, a map $\{i: R(\sigma'[i]) \; for \; i \in OBSERVED(\sigma, T)\}$
         \item
-        $S = [s_1 ... s_m]$, an array of signatures
+        $S = [s_1 \ldots s_m]$, an array of signatures
         \item
         $H(T)$
         \item
@@ -516,7 +545,7 @@ Assuming less than $\frac{1}{3}$ of validators are Byzantine, a block that is va
 \end{lem}
 
 \begin{proof}
-Suppose that all $\beta_i$ satisfy the second-level validity criteria. Then, note that each substate in $\sigma$ is only modified by at most one $T_i$, and so we can model the state as a tuple $(O, A_1, A_2, A_3 ... A_n)$ if $\beta$ includes $k$ transactions, where $A_i$ is the affected area of $T_i$ and $O$ is the remaining part of $\sigma$. The state after $T_1$ will be $(O, A'_1, A_2, A_3 ... A_n)$, by disjointness the state after $T_2$ will be $(O, A'_1, A'_2, A_3 ... A_n)$, and so forth until the final state is $(O, A'_1, A'_2, A'_3 ... A'_n)$. If we use the top-level state transition function on $\psi$, we can partition $\psi$ similarly into $(O, B_1, B_2, B_3 ... B_n)$, and a similar progression will take place, with state roots matching up at every step. Hence the final state at this top-level state transition will be made up of the roots of the substates in $\sigma'$.
+Suppose that all $\beta_i$ satisfy the second-level validity criteria. Then, note that each substate in $\sigma$ is only modified by at most one $T_i$, and so we can model the state as a tuple $(O, A_1, A_2, A_3 \ldots A_n)$ if $\beta$ includes $k$ transactions, where $A_i$ is the affected area of $T_i$ and $O$ is the remaining part of $\sigma$. The state after $T_1$ will be $(O, A'_1, A_2, A_3 \ldots A_n)$, by disjointness the state after $T_2$ will be $(O, A'_1, A'_2, A_3 \ldots A_n)$, and so forth until the final state is $(O, A'_1, A'_2, A'_3 \ldots A'_n)$. If we use the top-level state transition function on $\psi$, we can partition $\psi$ similarly into $(O, B_1, B_2, B_3 \ldots B_n)$, and a similar progression will take place, with state roots matching up at every step. Hence the final state at this top-level state transition will be made up of the roots of the substates in $\sigma'$.
 
 Now, suppose that one $\beta_i$ does not satisfy the second-level criteria. Then, validators following the protocol will consider it invalid, and so $\frac{2m}{3}$ validators will not be willing to sign off on it with very high probability, and so the block will not satisfy the top-level criteria.
 \end{proof}
@@ -551,7 +580,7 @@ validating the header chain
 validating the blocks
 \end{itemize}
 
-For the header chain, note that the size of each super-block is $n+k_1b+k_2$, where $n$ is the size of the state partition (as each index can be included as an observed area at most once), $b$ is the number of blocks, $k$ is a constant representing the size of $H(T) + H(D) + [s_1 ... s_m]$, and $k_2$ is a constant for miscellaneous super-block data (eg. validators entering and leaving, the entropy source, timestamp, previous block hash). We can require $n \in O(N^{1-\epsilon})$ and $b \le n$ so $b \in O(N^{1-\epsilon})$. One can come up with an algorithm to evaluate the top-level validity of the block in less than $O(N)$ time; showing that observed areas do not intersect as a set non-intersection algorithm can take up to $O(k*log(k))$ time for $k$ items and $O(N^{1-\epsilon} * log(N^{1-\epsilon})) < O(N)$, and the individual block validations should simply take $O(N^{1-\epsilon})$ time.
+For the header chain, note that the size of each super-block is $n+k_1b+k_2$, where $n$ is the size of the state partition (as each index can be included as an observed area at most once), $b$ is the number of blocks, $k$ is a constant representing the size of $H(T) + H(D) + [s_1 \ldots s_m]$, and $k_2$ is a constant for miscellaneous super-block data (eg. validators entering and leaving, the entropy source, timestamp, previous block hash). We can require $n \in O(N^{1-\epsilon})$ and $b \le n$ so $b \in O(N^{1-\epsilon})$. One can come up with an algorithm to evaluate the top-level validity of the block in less than $O(N)$ time; showing that observed areas do not intersect as a set non-intersection algorithm can take up to $O(k*log(k))$ time for $k$ items and $O(N^{1-\epsilon} * log(N^{1-\epsilon})) < O(N)$, and the individual block validations should simply take $O(N^{1-\epsilon})$ time.
 
 For block validation, suppose that there are $v \in O(N^{1-\epsilon})$ validators. Each super-block may contain a maximum of $n$ blocks, and $n \in O(N^{1-\epsilon})$. Thus, in total, validators must process at most $m*n$ blocks (as each block must be processed by $m$ validators), and so each validator will on average end up processing $m*n/v \le O(1)$ blocks. If each block has $O(N^{1-\epsilon})$ transactions, then the computational load of this is $m * O(N^{1-\epsilon}) < O(N)$. Hence, the total load of a validator is less than $O(N)$ while the network processes a total of $O(N^{2-\epsilon})$ transactions.
 
@@ -602,13 +631,13 @@ A particular consequence of this is that validating data availability through ca
 In order to make clear the gravity of the problem, we will start off by showing several categories of attacks that are possible if data availability cannot be effectively ensured.
 
 \begin{exmp}[Unprovable theft attack]
-An attacker creates a block with transactions $T_1$ ... $T_n$, where $T_1$ ... $T_{n-1}$ are legitimate and applied properly but $T_n$ is an invalid transaction which seems to transfer \$1 million from an arbitrary wealthy user to the attacker. The attacker makes $T_1$ ... $T_{n-1}$ available, and makes the final state available, but does not make $T_n$ available. Once the state is confirmed by a sufficient number of future blocks, the attacker than spends the \$1 million to purchase other untraceable digital assets.
+An attacker creates a block with transactions $T_1$ \ldots $T_n$, where $T_1$ \ldots $T_{n-1}$ are legitimate and applied properly but $T_n$ is an invalid transaction which seems to transfer \$1 million from an arbitrary wealthy user to the attacker. The attacker makes $T_1$ \ldots $T_{n-1}$ available, and makes the final state available, but does not make $T_n$ available. Once the state is confirmed by a sufficient number of future blocks, the attacker than spends the \$1 million to purchase other untraceable digital assets.
 
 Here, note that there is no way to prove invalidity, because theoretically $T_n$ very easily \emph{could be} a transaction legitimately transferring \$1 million from the millionaire to the attacker, but the unavailability of the data prevents the network from making the judgement.
 \end{exmp}
 
 \begin{exmp}[Sudden millionaire attack]
-An attacker creates a block with transactions $T_1$ ... $T_n$, where $T_1$ ... $T_{n-1}$ are applied properly but $T_n$ is an invalid transaction. The attacker then makes $T_1$ ... $T_{n-1}$ available, and makes \emph{most} of the final state available, with the exception of one branch where the attacker has given themselves \$1 million out of nowhere. Two years later, the attacker reveals this branch, and the network is forced to either accept the transaction or revert two years of history.
+An attacker creates a block with transactions $T_1$ \ldots $T_n$, where $T_1$ \ldots $T_{n-1}$ are applied properly but $T_n$ is an invalid transaction. The attacker then makes $T_1$ \ldots $T_{n-1}$ available, and makes \emph{most} of the final state available, with the exception of one branch where the attacker has given themselves \$1 million out of nowhere. Two years later, the attacker reveals this branch, and the network is forced to either accept the transaction or revert two years of history.
 \end{exmp}
 
 \begin{note}
@@ -760,7 +789,7 @@ The definition is simple, and so somewhat obscures the complex inner workings of
 
 At this point, the algorithm almost has $O(N^{3-\epsilon})$ scalability, but not quite. There are two reasons why. First, note that each third-level block independently picks $m$ validators. Hence, if a second-level block has $O(N)$ transactions, and assuming that there are $O(N)$ second-level substates, we can expect a single second-level block to have an observed area of size $1 - \frac{1}{e^m}$ of the whole set of substates - which for even the highly unrealistic $m = 5$ amounts to almost all of it. Hence, there can be at most one second-level block, and so our scalability is right back to $O(N^{2-\epsilon})$.
 
-To solve this problem, we make a moderate change: we say that the set of validators for any transactions should always be determined from the state \emph{at the start} of the super-block. Formally, we say that a superblock has two ``virtual transactions'' $\sigma \rightarrow (\sigma, \sigma)$ at the start, and then $(\sigma, \sigma') \rightarrow \sigma'$ at the end, and validators are selected from the left pool, not the right pool. This allows us to have validators be selected from anywhere in the state without including them into any observed areas. From an implementation perspective, this means that a block at any level would need to come with signatures $[s_1 ... s_m]$ and also Merkle proofs $[\pi_1 ... \pi_m]$ where $\pi_i$ proves that the validator $V_i$ that produced signature $s_i$ is indeed at the correct position in the validator pool of the super-block's pre-state.
+To solve this problem, we make a moderate change: we say that the set of validators for any transactions should always be determined from the state \emph{at the start} of the super-block. Formally, we say that a superblock has two ``virtual transactions'' $\sigma \rightarrow (\sigma, \sigma)$ at the start, and then $(\sigma, \sigma') \rightarrow \sigma'$ at the end, and validators are selected from the left pool, not the right pool. This allows us to have validators be selected from anywhere in the state without including them into any observed areas. From an implementation perspective, this means that a block at any level would need to come with signatures $[s_1 \ldots s_m]$ and also Merkle proofs $[\pi_1 \ldots \pi_m]$ where $\pi_i$ proves that the validator $V_i$ that produced signature $s_i$ is indeed at the correct position in the validator pool of the super-block's pre-state.
 
 Second, note that ``fallback'' mechanisms all eventually lead to \emph{all} validators in their validator pool processing a particular block, and producing a transaction which contains all of their signatures. Here, our largest validator pool is of size $O(N^{2-\epsilon})$, and so at least one node somewhere will have to process $O(N^{2-\epsilon})$ signatures. To solve this, we institute an additional rule: when the number of validators reached by a fallback scheme exceeds $O(N^{1-\epsilon})$, the next level of validation will return to $m$ validators, but \emph{one level higher}.
 
@@ -805,7 +834,7 @@ Achieving constant-factor gains by increasing efficiency of Merkle proofs, block
 \item
 Increasing block speed
 \item
-Making reverts less harmful by using inclusive blockchain protocols (ie. if $\beta_1 ... \beta_n$ is the set of blocks that was reverted, and $\sigma'_f$ is the post-revert state, automatically update to $\sigma''_f$ = $\sigma'_f {++} \beta_1 {++} ... {++} \beta_n$).
+Making reverts less harmful by using inclusive blockchain protocols (ie. if $\beta_1 \ldots \beta_n$ is the set of blocks that was reverted, and $\sigma'_f$ is the post-revert state, automatically update to $\sigma''_f$ = $\sigma'_f {++} \beta_1 {++} \ldots {++} \beta_n$).
 \item
 Providing the option for even higher gains of efficiency but at the cost of less-than-perfect guarantees of atomicity, ie. reducing $m$ to $8$ with the associated cost gains but with the understanding that the action happens within a cordoned-off area of the state where invalid transitions will sometimes happen.
 \end{itemize}

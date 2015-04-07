@@ -12,6 +12,9 @@
     urlcolor=black
 }
 
+\usepackage{caption}
+\usepackage{subcaption}
+
 \usepackage[nottoc,notlot,notlof]{tocbibind}
 \usepackage{natbib}
 \usepackage[utf8]{inputenc}
@@ -387,12 +390,29 @@ SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a forma
 
 % TODO: This analysis is pointlessly abstract; a sobering analysis would point out that the Augur has (1) a "Trust" presale and (2) is weighted via bit coin.  This naturally means that VCs or financiers with lots of bit coin holdings can use Augur as a distributed, "plausible deniability" oracle for publishing copy right material on a blockchain.  Such financiers are not interested in this pie-in-the-sky non-cooperative game theoretic analyses but a real-world analysis on their voting power.
 
-There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of \emph{TruthCoin}-style counter-coordination \citep{sztorc_trustless_2014}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
+There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of \emph{TruthCoin}-style counter-coordination \citep{sztorc_trustless_2014}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit.  This situation is presented in Figure \ref{fig:unadulterated_truthcoin}. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe, presented in Figure \ref{fig:bribed_truthcoin}.
 
-\begin{center}
-\includegraphics[width=165pt]{figs/pdfs/schellingcoin_payoff1.pdf}
-\includegraphics[width=165pt]{figs/pdfs/schellingcoin_payoff2.pdf}
-\end{center}
+\begin{figure}
+\centering
+\begin{minipage}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figs/pdfs/schellingcoin_payoff1.pdf}
+  \captionof{figure}{Unadulterated Game}
+  \label{fig:unadulterated_truthcoin}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figs/pdfs/schellingcoin_payoff2.pdf}
+  \captionof{figure}{Bribed Game}
+  \label{fig:bribed_truthcoin}
+\end{minipage}
+\end{figure}
+
+%\begin{center}
+%\includegraphics[width=0.4\textwidth]{figs/pdfs/schellingcoin_payoff1.pdf}
+%\includegraphics[width=0.4\textwidth]{figs/pdfs/schellingcoin_payoff2.pdf}
+%\end{center}
+
 
 This approach accepts that attackers with a budget even larger than the size of everyone's security deposits will be able to cause everyone to flip to voting incorrectly as an equilibrium, but advocates note that attackers that large will also be able to arbitrarily disrupt the underlying blockchain consensus anyway.
 

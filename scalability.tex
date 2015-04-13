@@ -23,8 +23,8 @@
 
 
 \title{Notes on Scalable Blockchain Protocols (version 0.0.2)}
-\date{March 14-31, 2015}
-\author{Vitalik Buterin (Ethereum) \\  \\ Reviewers and collaborators: Gavin Wood, Vlad Zamfir (Ethereum), \\ Jeff Coleman (Kryptokit)}
+\date{March 14-April 12, 2015}
+\author{Vitalik Buterin (Ethereum) \\  \\ Reviewers and collaborators: Gavin Wood, Vlad Zamfir (Ethereum), \\ Jeff Coleman (Kryptokit), \\ Eric Lombrozo (Ciphrex)}
 
 \begin{document}
 
@@ -47,11 +47,11 @@ Our basic designs allow for a network consisting solely of nodes bounded by $O(N
 \chapter{Definitions}
 
 \begin{defn}[State]
-A \emph{state} is a piece of data.
+A \emph{state} is an arbitrary collection of data at a given instant in time to which we can apply changes.
 \end{defn}
 
 \begin{defn}[Transaction]
-A \emph{transaction} is a piece of data. A transaction typically includes a cryptographic signature from which one can verify its sender, though in this paper we use "transaction" in some contexts more generally.
+A \emph{transaction} is an atomic transition on a \emph{state}. A transaction typically includes a cryptographic signature from which one can verify its sender, though in this paper we use "transaction" in some contexts more generally.
 \end{defn}
 
 \begin{defn}[State Transition Function]
@@ -120,11 +120,15 @@ Disjointness does not preclude the observed areas of $T_1$ and $T_2$ from inters
 \end{note}
 
 \begin{defn}[Block]
-A \emph{block} is a piece of data, encoding a collection of transactions typically alongside verification data, a pointer to the previous block, and other miscellaneous metadata. There typically exists a \emph{block-level state transition function} $APPLY$, where $APPLY(\sigma, \beta) = \sigma + T$, where $T$ is a list of transactions. We of course denote $APPLY(\sigma, \beta)$ with $\sigma + \beta$. A block is valid if $T$ is valid in the context of $\sigma$, and if it satisfies other validity criteria that may be specified by the protocol. In many protocols, there exists a special ``block finalization function''; we model this by stipulating that every block may include a ``virtual transaction'' that effects the desired state transition.
+A \emph{block} is a collection of transactions typically alongside verification data, a cryptographic hash of the previous block, and other miscellaneous metadata. There typically exists a \emph{block-level state transition function} $APPLY$, where $APPLY(\sigma, \beta) = \sigma + T$, where $T$ is a list of transactions. We of course denote $APPLY(\sigma, \beta)$ with $\sigma + \beta$. A block is valid if $T$ is valid in the context of $\sigma$, and if it satisfies other validity criteria that may be specified by the protocol. In many protocols, there exists a special ``block finalization function''; we model this by stipulating that every block may include a ``virtual transaction'' that effects the desired state transition.
 \end{defn}
 
 \begin{defn}[Proposer]
 The \emph{proposer} of a block is the user that produced the block.
+\end{defn}
+
+\begin{defn}[Genesis state]
+A \emph{genesis state} is an arbitrary state to which a \emph{cryptoeconomic state machine} is initialized.
 \end{defn}
 
 \begin{defn}[Blockchain]
@@ -140,7 +144,7 @@ The set of \emph{ancestors} of a state $\sigma$ is recursively defined via $ANC(
 \end{defn}
 
 \begin{defn}[Weight function]
-A \emph{weight function} is a function $W(u, \sigma)$ on the set of users $u_1 ... u_n$ (each of which is assumed to have a private and public key) in the context of a state $\sigma$, such that for all users in the network, $\sum_{i=0}^n W(u_i, \sigma) = 1$. ``$k$ of all weight'' will be used to denote the idea of a subset of users such that the sum of their weights is $k$. 
+A \emph{weight function} is a function $W(u, \sigma)$ on the set of users $u_1 ... u_n$ (each of which is assumed to be able to cryptographically sign transactions) in the context of a state $\sigma$, such that for all users in the network, $\sum_{i=0}^n W(u_i, \sigma) = 1$. ``$k$ of all weight'' will be used to denote the idea of a subset of users such that the sum of their weights is $k$. 
 \end{defn}
 
 \begin{note}
@@ -247,7 +251,7 @@ A \emph{sampling function} is a function $SAMPLE(W, k, m) \rightarrow {u_1 ... u
 \end{defn}
 
 \begin{exmp}
-Arrange all users $u_1 ... u_n$ in order of public key, and assign the range $[\sum_{i=1}^{j-1} W(u_i)...\sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 <= j <= n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
+Arrange all users $u_1 ... u_n$ in some well-defined canonical order, and assign the range $[\sum_{i=1}^{j-1} W(u_i)...\sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 <= j <= n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
 \end{exmp}
 
 \begin{defn}[Merkle tree protocol]
@@ -289,7 +293,7 @@ $E(\sigma + \beta) = sha256(E(\sigma) + V(\beta))$ where $V(\beta)$ is the block
 \end{exmp}
 
 \begin{assm}
-For any time internal $I$, there exists some fixed probability $p_o(I)$ such that a node randomly selected according to the weight function used to measure a cryptoeconomic state machine's Byzantine fault tolerance can be expected to be offline for at least the next $I$ seconds starting from any particular point in time with at least probability $p_o$.
+For any time interval $I$, there exists some fixed probability $p_o(I)$ such that a node randomly selected according to the weight function used to measure a cryptoeconomic state machine's Byzantine fault tolerance can be expected to be offline for at least the next $I$ seconds starting from any particular point in time with at least probability $p_o$.
 \end{assm}
 
 \begin{note}

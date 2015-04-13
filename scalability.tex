@@ -1,6 +1,8 @@
 \documentclass[11pt,a4paper]{report}
 \usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,url,array,graphicx}
 \usepackage[english]{babel}
+\usepackage{mdframed}
+\usepackage{amsmath}
 
 
 \theoremstyle{plain}
@@ -95,25 +97,36 @@ A \emph{partitioning scheme} is a bijective function $P$ which maps possible val
 The \emph{affected area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $AFFECTED(\sigma, \tau)$) is the set of indices $S$ such that $(\sigma + \tau)[i] \ne \sigma[i]$ for $i \in S$ and $(\sigma + \tau)[i] = \sigma[i]$ for $i \notin S$.
 \end{defn}
 
+\begin{exmp}
+Assume $\sigma_i \neq \overline{\sigma_i}$ for any $i \in [1,n]$. \\
+Let $(\sigma_1,\sigma_2,\sigma_3,\sigma_4,\sigma_5) + \tau = (\sigma_1,\overline{\sigma_2},\overline{\sigma_3},\sigma_4,\overline{\sigma_5})$.
+Then the \emph{affected area} of $\tau$ in the context of $\sigma$ is $S = \{2, 3, 5\}$.
+\end{exmp}
+
 \begin{defn}[Observed area]
 The \emph{observed area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $OBSERVED(\sigma, \tau)$) is defined as the smallest set of indices $S$ such that for any $\psi$ where $\psi[S] = \sigma[S]$ and $\psi' = \psi + \tau$, we have $\psi'[S] = \sigma'[S]$ and $\psi'[i] = \psi[i]$ for $i \notin S$. 
 \end{defn}
+
+\begin{exmp}
+Assume $\sigma_i \neq \overline{\sigma_i}$ for any $i \in [1,n]$ and assume $z \neq \overline{z}$ for some substate $z$. \\
+Let $(x, \sigma_2, \sigma_3, y, \sigma_5) + \tau = (x, \overline{\sigma_2}, \overline{\sigma_3}, y, \overline{\sigma_5})$ for any substate $x$ and some specific substate $y$ but $(x, \sigma_2, \sigma_3, z, \sigma_5) + \tau = (x, \overline{\sigma_2}, \overline{\sigma_3}, \overline{z}, \overline{\sigma_5})$ for any substate $x$ and another specific substate $z$. Then the \emph{observed area} of $\tau$ in the context of $\sigma$ is $s = \{2, 3, 4, 5\}$.
+\end{exmp}
 
 \begin{note}
 The observed area of a transaction, as defined above, is a superset of the affected area of the transaction.
 \end{note}
 
+\begin{defn}[Disjointness]
+Two transactions are \emph{disjoint} if there exists a partition such that the observed area of each transaction is disjoint from the affected area of the other.\end{defn}
+
 \begin{thm}
-If, in the context of $\sigma$, the observed area of $T_1$ is disjoint from the affected area of $T_2$ and vice versa, then $T_1$ and $T_2$ are commutative.
+Two transactions $T_1$ and $T_2$ are commutative iff they are disjoint.
 \end{thm}
 
 \begin{proof}
 Suppose a partition of $[n]$ into the subsets $a = AFFECTED(\sigma, T_1)$, $b = AFFECTED(\sigma, T_2)$ and $c = [n] \setminus a \setminus b$. Let us repartition $\sigma$ as $(\alpha, \beta, \gamma)$ for $\sigma[a]$, $\sigma[b]$ and $\sigma[c]$ respectively. Suppose that $\sigma + T_1 = (\alpha', \beta, \gamma)$, and $\sigma + T_2 = (\alpha, \beta', \gamma)$. Because $a$ is outside the observed area of $T_2$ (as it is the affected area of $T_1$), we can deduce from the previous statement that $(x, \beta, \gamma) + T_2 = (x, \beta', \gamma)$. Hence, $\sigma + T_1 + T_2 = (\alpha', \beta, \gamma) + T_2 = (\alpha', \beta', \gamma)$. Similarly, because $b$ is outside the observed area of $T_1$, $\sigma + T_2 + T_1 = (\alpha, \beta', \gamma) + T_1 = (\alpha', \beta', \gamma)$.
 \end{proof}
 
-\begin{defn}[Disjointness]
-Two transactions are \emph{disjoint} if there exists a partition such that the observed area of each transaction is disjoint from the affected area of the other. If two transactions are disjoint then, as shown above, they are commutative.
-\end{defn}
 
 \begin{note}
 Disjointness does not preclude the observed areas of $T_1$ and $T_2$ from intersecting. However, in the rest of this paper, we will generally follow a stricter criterion where observed areas are not allowed to intersect; this does somewhat reduce the effectiveness of our designs, but it carries the benefit of allowing a substantially simplified analysis.
@@ -738,7 +751,7 @@ Finally, there is the protocol-level decision of how to maintain the divisions b
 
 \begin{itemize}
 \item
-Employ an adaptive algorithms, perhaps adapting Karger's minimal-cut algorithm \cite{karger}, in order to split and join substates over time. Note that this can be done at the strategy level, giving the top-level consensus the right to split and join substates arbitrarily, but making it economically efficient for them to make splits that create a minimal cut. One disadvantage of this approach is that if transaction fees are priced so as to disincentivize cross-substate activity, fees for specific operations become unpredictable since substates can be rearranged.
+Employ an adaptive algorithm, perhaps adapting Karger's minimal-cut algorithm \cite{karger}, in order to split and join substates over time. Note that this can be done at the strategy level, giving the top-level consensus the right to split and join substates arbitrarily, but making it economically efficient for them to make splits that create a minimal cut. One disadvantage of this approach is that if transaction fees are priced so as to disincentivize cross-substate activity, fees for specific operations become unpredictable since substates can be rearranged.
 \item
 Create new substates every time existing substates get too large, and incentivize users that marginally care less about network effect to act in those substates by lowering transaction fee pricing. This removes the ability to make arbitrary splits, but also leads to unpredictable pricing since prices do need to go up to incentivize users away from high-activity substates - although the pricing would be far more even and less discretionary.
 \item

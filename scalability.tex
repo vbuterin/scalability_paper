@@ -13,6 +13,7 @@
 }
 
 \newcommand{\comment}[1]{\textcolor{red}{\textit{#1}}}
+\newcommand{\anothercomment}[1]{\textcolor{blue}{\textit{#1}}}
 
 \usepackage{caption}
 \usepackage{subcaption}
@@ -63,30 +64,46 @@
 
 \chapter{Introduction}
 
-\comment{I have to point out that all of this talk of scalability is premature -- very little effort has been put into making the existing Ethereum platform performant.  I can point out the following optimizations.
+\comment{I have to point out that all of this talk of scalability is premature, for two reasons:
+\begin{enumerate}
+\item There is absolutely no statistics what-so-ever on the actual bottlenecks of Ethereum as a database.  \textbf{Knowing next to nothing about the data access pattern, it's rather premature to strategize on how to structure a database to be optimized for it}.
+\item Very little effort has been put into making the existing Ethereum platform performant.  I can point out the following optimizations:
 \begin{enumerate}
 \item Demand that nodes not use leveldb, and instead keep the entire Merkle Tree in RAM.  Even after 6 years of bit coin operation, a high-end computer with 128 GB of RAM could keep the entire chain in memory this way.  This gives a $1000$X speedup over disk-based solutions.  Tendermint is already doing this.
 \item The EVM is needlessly abstract.  There's more than a 10X speedup possible by just using little-endian, 64 bit arithmetic (cell sizes can remain 256 bits).  Likewise, the platform desperately needs conventional instructions like bitshift.  If you ran a SchellingCoin amongst the developers, you'd find that everyone would agree that these pointlessly slow down the platform.  Again, tender mint is already doing this.
-\item Recently, a ``keep the change'' opcode was proposed.  Why not *always* keep the change?  That way, the JIT wouldn't really need to count opcodes, and you can get another 10X performance boost.  Tendermint plans to do this once they get support for the JIT.  This provides at least an additional 10X speedup, on top of the 100X speedup from JIT.
+\item Recently, a ``keep the change'' opcode was proposed.  Why not *always* keep the change (a la BitCoin)?  That way, the JIT wouldn't really need to count opcodes, and you can get another 10X performance boost.  Tendermint plans to do this once they get support for the JIT.  This provides at least an additional 10X speedup, on top of the 100X speedup from JIT.
+\end{enumerate}
 \end{enumerate}}
 
 Currently, all blockchain consensus protocols that are actively in use have a critical limitation: every node in the network must process every transaction. Although this requirement ensures a very strong guarantee of security, making it all but impossible for an attacker even with control over every node participating in the consensus process to convince the network of the validity of an invalid transaction, it comes at a heavy cost: every blockchain protocol that works in this way is forced to choose between limiting itself to a low maximum transaction throughput, with a resulting high per-transaction cost, and allowing a high degree of centralization.
 
-What might perhaps seem like a natural solution, splitting the relevant data over a thousand blockchains, has the two fundamental problems that it (i) decreases security, to the point where the security of \emph{each individual blockchain} on average does not grow \emph{at all} as total usage \emph{of the ecosystem} increases, and (ii) massively reduces the potential for interoperability. Other approaches, like merge-mining, seem to have stronger security, though in practice such approaches are either very weak in more subtle ways \citep{todd_re:_2013} - and indeed, merged mined blockchains have successfully been attacked\citep{piasecki_what_2012} - or simply fail to solve scalability, requiring every consensus participant to process every blockchain and thus every transaction anyway.
+What might perhaps seem like a natural solution, splitting the relevant data over a thousand blockchains, has the two fundamental problems that it (i) decreases security, to the point where the security of \emph{each individual blockchain} on average does not grow \emph{at all} as total usage \emph{of the ecosystem} increases, and (ii) massively reduces the potential for interoperability. Other approaches, like merge-mining, seem to have stronger security, though in practice such approaches are either very weak in more subtle ways \citep{todd_re:_2013}. Merged mined blockchains have successfully been attacked\citep{piasecki_what_2012}. Merged mined databases fail to solve scalability, requiring every consensus participant to process every blockchain and thus every transaction anyway.
 
-There are several reasons why scalable blockchain protocols have proven to be such a difficult problem. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes now necessarily need to employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire "state", and must therefore be a "light client", downloading only a small amount of header data and not performing full verification checks, everywhere else. Second, we need to be concerned not only with validity but also with data availability; it is entirely possible for a block to appear that looks valid, and is valid, but for which the auxiliary data is unavailable, leading to a situation where no other validator can effectively validate transactions or produce new blocks since the necessary data is unavailable to them. Finally, transactions must necessarily be processed by different nodes in parallel, and given that it is not possible to parallelize arbitrary computation \citep{amdahl_validity_1967,gustafson_reevaluating_1988}, we must determine the set of restrictions to a state transition function that will best balance parallelizability and utility.
+There are several reasons why scalable blockchain protocols have proven to be such a difficult problem. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes now necessarily need to employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire "state", and must therefore be a "light client", downloading only a small amount of header data and not performing full verification checks, everywhere else. Second, we need to be concerned not only with validity but also with data availability; it is entirely possible for a block to appear that looks valid, and is valid, but for which the auxiliary data is unavailable, leading to a situation where no other validator can effectively validate transactions or produce new blocks since the necessary data is unavailable to them. Finally, transactions must necessarily be processed by different nodes in parallel, and given that it is not possible to parallelize arbitrary computation \citep{amdahl_validity_1967, gustafson_reevaluating_1988}, we must determine the set of restrictions to a state transition function that will best balance parallelizability and utility.
 
-This paper proposes another set of strategies for achieving scalability, as well as some formalisms that can be used when discussing and comparing scalable blockchain protocols. Generally, the strategies revolve around a "sample-and-fallback" game: in order for any particular block to be valid, require it to be approved by a randomly selected sample of validators, and in case a bad block does come through employ a mechanism in which a node can challenge invalid blocks, reverting the harmful transactions and transferring the malfeasant validators' security deposit to the challengers as a reward unless the challenge is answered by a confirmation of validity from a much greater number of validators. Theoretically, under a Byzantine-fault-tolerant model of security, fallback is unnecessary; sampling only is sufficient. However, if we are operating in an anonymous-validator environment, then it is also considered desirable to have a hard economic guarantee of the minimum quantity of funds that needs to be destroyed in order to cause a certain level of damage to the network; in that case, in order to make the economic argument work we use fallback as a sort of incentivizer-of-last-resort, making cooperation the only subgame-perfect equilibrium.
+This paper proposes another set of strategies for achieving scalability, as well as some formalisms that can be used when discussing and comparing scalable blockchain protocols. Generally, the strategies revolve around a ``sample-and-fallback" protocol. In order for any particular block to be valid, it is require to be approved by a randomly selected sample of validators. In case a bad block does come through there is an opportunity for a challenger to demonstrate invalidate blocks, reverting the harmful transactions and taking the validators' security deposit as a reward, unless the challenge is answered by a confirmation of validity from a much greater number of validators.
 
-\comment{Subgame perfect equilibria are not terribly stable.  For more stable equilibria, you might look at ``Evolutionarily Stable Strategies'': \url{http://en.wikipedia.org/wiki/Evolutionarily_stable_strategy}.  However, since all of this is assuming Proof of Stake voting games, you should be looking for ``Coalition proof Nash Equilibria'' \url{http://en.wikipedia.org/wiki/Coalition-proof_Nash_equilibrium}}.
+Theoretically, under a Byzantine-fault-tolerant model of security, fallback is unnecessary; sampling only is sufficient. However, if we are operating in an anonymous-validator environment, then it is also considered desirable to have a hard economic guarantee of the minimum quantity of funds that needs to be destroyed in order to cause a certain level of damage to the network. In that case, in order to make the economic argument work we use fallback as a sort of incentivizer-of-last-resort, making cooperation the only subgame-perfect equilibrium.
 
-The particular advantage that our designs provide is a very high degree of generalization and abstraction; although other schemes using technologies like auditable computation\citep{buterin_scalability_2014} and micropayment channels\citep{poon_bitcoin_2015} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs require no specific properties of the underlying state transition function except for the demand that most state changes are in some sense ``localized''.
+\comment{Subgame perfect equilibria are not stable.  There's a nice writeup by the evolution game theorist Rob Cressman on this: \url{http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.199.5811&rep=rep1&type=pdf}
+\begin{quote} We find that the backwards
+induction solution is fully justified by this process only in simple games;
+simple meaning two players, two actions at each node and at most three
+consecutive decisions in the game. Examples of more complex games are
+given in which this process does not select between the subgame perfect
+equilibrium outcome and alternative Nash equilibrium outcomes.\end{quote}
+I don't think the authors should even mention it, subgame perfect equilibria are basically never achieved in experimental or evolutionary settings: \url{http://teamcore.usc.edu/yangrong/reading_group/FiguresPapers/1992-McKelvey_Palfrey-centepede.pdf}, \url{http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.199.5811&rep=rep1&type=pdf}
+}
+
+The particular advantage that our designs provide is a very high degree of generalization and abstraction; although other schemes using technologies like auditable computation \citep{buterin_scalability_2014} and micropayment channels \citep{poon_bitcoin_2015} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs require no specific properties of the underlying state transition function except for the demand that most state changes are in some sense ``localized''.
 
 Our basic designs allow for a network consisting solely of nodes bounded by $O(N)$ computational power to process a transaction load of $O(N^{2-\epsilon})$ (we generally use $O(N^\epsilon)$ to denote polylogarithmic terms for simplicity), under both Byzantine-fault-tolerant and economic security models; we then also propose an experimental ``stacking'' strategy for achieving arbitrary scalability guarantees up to a maximum of $O(exp(N/k))$ transactional load, although we recommend that for simplicity implementers attempt to perfect the $O(N^{2-\epsilon})$ designs first.
 
+\comment{The authors have to explain what $N$ is in this context, it's unclear.}
+
 \chapter{Definitions}
 
-\comment{Chapter Summary:  This chapter introduces abstract definitions for state transition systems over a partitioned database.}
+\comment{Chapter Summary:  This chapter introduces abstract definitions for state transition systems over a partitioned database and economic assurances of security over such systems.}
 
 \begin{defn}[State]
 A \emph{state} is a piece of data.
@@ -125,13 +142,11 @@ T is \emph{valid in the context of $\sigma$} if $T = T \setminus \sigma$
 $[n]$ is the set $\{1, 2, 3, \ldots, n\}$ \comment{Why aren't we starting at 0????}
 \end{itemize}
 
-\comment{In the section above, the authors reinvent a sloppy form small step structural operational semantics.  The notation the authors use is non-standard, and unclear to readers already familiar with operational semantics.  A reasonable primer is by the logician Matthew Hennessy, ``The Semantics of Programming Languages'' (Wiley, 1990)\\
+\comment{In the section above, the authors reinvent a sloppy form small step structural operational semantics.  The notation the authors use is non-standard, and unclear to readers already familiar with operational semantics.  A reasonable primer is by the logician Matthew Hennessy, ``The Semantics of Programming Languages'' (Wiley, 1990).  Another is Plotkin's original paper introducing the concept: \url{http://homepages.inf.ed.ac.uk/gdp/publications/sos_jlap.pdf}\\
 \\
-The standard way of writing something like ``What $\tau$ evaluates to in the context of $\sigma$'' is given by the expression $\sigma \vdash \tau$.  I've never seen anybody use ``$+$'' for composition -- it's usually ``$;$''.  This is because ``$;$'' is used to compose expressions in C, C++, Java, Javascript, Coffeescript, Python, Ruby, Solidity, Julia, D, Algo64, Fortran, and PL1 (but not ML, they use ``$;;$''))\\
+The standard way of writing something like ``What $\tau$ evaluates to in the context of $\sigma$'' is given by the expression $\sigma \vdash \tau$ (or, following Plotkin, $\langle \tau, \sigma \rangle$.  I've never seen anybody use ``$+$'' for composition -- it's usually ``$;$''.  This is because ``$;$'' is used to compose expressions in C, C++, Java, Javascript, Coffeescript, Python, Ruby, Solidity, Julia, D, Algo64, Fortran, and PL1 (but not ML, they use ``$;;$''))\\
 \\
-So if you wanted to say something like ``$\tau$ and $\tau'$ commute in the context of $\sigma$'' you might write $\sigma \vdash \tau ; \tau' \equiv \sigma \vdash \tau' ; \tau$\\
-\\
-This whole section would be easier to swallow for folks who don't already know operational semantics if the authors had an example or something of a system that did any of this.}
+So if the authors wanted to say something like ``$\tau$ and $\tau'$ commute in the context of $\sigma$'' you might write $\sigma \vdash \tau ; \tau' \equiv \sigma \vdash \tau' ; \tau$.}
 
 \begin{defn}[Replay-immunity]
 A state transition function is \emph{replay-immune} if, for any $\sigma$, $\tau$ and $T$, $\sigma + \tau + T + \tau = \varnothing$. Generally, we assume that all state transition functions used in consensus protocols are replay-immune; otherwise, the protocol is almost certainly vulnerable to either exploits or denial of service attacks.
@@ -154,7 +169,6 @@ A \emph{partitioning scheme} is a bijective function $P$ which maps possible val
 \end{defn}
 
 \begin{defn}[Affected area]
-\comment{Dijkstra invented this concept back in 1965 in his paper ``Solution of a problem in concurrent programming control''.  Instead of *affected area*, Dijkstra calls this concept *critical section*. Leslie Lamport has a follow up paper involving some more modern examples and results: \url{http://research.microsoft.com/en-us/um/people/lamport/pubs/when-mutex.pdf}\\}
 The \emph{affected area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $AFFECTED(\sigma, \tau)$) is the set of indices $S$ such that $(\sigma + \tau)[i] \ne \sigma[i]$ for $i \in S$ and $(\sigma + \tau)[i] = \sigma[i]$ for $i \notin S$.
 \comment{\\
 \\
@@ -164,16 +178,20 @@ Given the law of the excluded middle, then\\
  \\
  is equivalent to\\
  \\
- ``the set $S$ of substate indices $i$ such that $(\sigma + \tau)[i] \neq \sigma[i]$''
+ ``the set $S$ of substate indices $i$ such that $(\sigma + \tau)[i] \neq \sigma[i]$'' \\
+ \\
+ It's easier just to use set theory notation: $AFFECTED(\sigma, \tau) := \{ i \in \mathcal{I} : (\sigma + \tau)[i] \neq \sigma[i] \}$
 }
 
 \end{defn}
 
 \begin{defn}[Observed area]
-The \emph{observed area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $OBSERVED(\sigma, \tau)$) is defined as the smallest set of indices $S$ such that for any $\psi$ where $\psi[S] = \sigma[S]$ and $\psi' = \psi + \tau$, we have $\psi'[S] = \sigma'[S]$ and $\psi'[i] = \psi[i]$ for $i \notin S$. 
+The \emph{observed area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $OBSERVED(\sigma, \tau)$) is defined as the smallest set of indices $S$ such that for any $\psi$ where $\psi[S] = \sigma[S]$ and $\psi' = \psi + \tau$, we have $\psi'[S] = \sigma'[S]$ and $\psi'[i] = \psi[i]$ for $i \notin S$ where $\sigma' = \sigma + \tau$. 
 \end{defn}
 
-\comment{In the above, $\sigma'$ is not defined, perhaps the authors meant $(\sigma + \tau)$???}
+\comment{Once again, it is not necessary to add in ``for $i \notin S$ where $\sigma' = \sigma + \tau$''.  The smallest set stuff is also superfluous. You can just write this as $OBSERVED(\sigma, \tau) := \{ i \in \mathcal{I} : \forall \psi. \psi[i] = \sigma[i] \Longrightarrow (\psi + \tau)[i] = (\sigma + \tau)[i] \}$\\
+\\
+Or, you can write ``The set $S$ of indices $i$ such that for any context $\psi$, if $\psi[i] = \sigma[i]$ then $(\psi + \tau)[i] = (\sigma + \tau)[i]$''}
 
 \begin{note}
 The observed area of a transaction, as defined above, is a superset of the affected area of the transaction.
@@ -184,14 +202,23 @@ If, in the context of $\sigma$, the observed area of $T_1$ is disjoint from the 
 \end{thm}
 
 \begin{proof}
-Suppose a partition of $[n]$ into the subsets $a = AFFECTED(\sigma, T_1)$, $b = AFFECTED(\sigma, T_2)$ and $c = [n] \setminus a \setminus b$. Let us repartition $\sigma$ as $(\alpha, \beta, \sigma)$ for $\sigma[a]$, $\sigma[b]$ and $\sigma[c]$ respectively. Suppose that $\sigma + T_1 = (\alpha', \beta, \sigma)$, and $\sigma + T_2 = (\alpha, \beta', \sigma)$. Because $a$ is outside the observed area of $T_2$ (as it is the affected area of $T_1$), we can deduce from the previous statement that $(x, \beta, \sigma) + T_2 = (x, \beta', \sigma)$. Hence, $\sigma + T_1 + T_2 = (\alpha', \beta, \sigma) + T_2 = (\alpha', \beta', \sigma)$. Similarly, because $b$ is outside the observed area of $T_1$, $\sigma + T_2 + T_1 = (\alpha, \beta', \sigma) + T_1 = (\alpha', \beta', \sigma)$.
+Suppose a partition of $[n]$ \anothercomment{(Sets of indices are usually represented with $\mathcal{I}$ in mathematics)} into the subsets $a = AFFECTED(\sigma, T_1)$, $b = AFFECTED(\sigma, T_2)$ and $c = [n] \setminus a \setminus b$. Let us repartition $\sigma$ as $(\alpha, \beta, \sigma)$ for $\sigma[a]$, $\sigma[b]$ and $\sigma[c]$ respectively. Suppose that $\sigma + T_1 = (\alpha', \beta, \sigma)$, and $\sigma + T_2 = (\alpha, \beta', \sigma)$. Because $a$ is outside the observed area of $T_2$ (as it is the affected area of $T_1$), we can deduce from the previous statement that $(x, \beta, \sigma) + T_2 = (x, \beta', \sigma)$. Hence, $\sigma + T_1 + T_2 = (\alpha', \beta, \sigma) + T_2 = (\alpha', \beta', \sigma)$. Similarly, because $b$ is outside the observed area of $T_1$, $\sigma + T_2 + T_1 = (\alpha, \beta', \sigma) + T_1 = (\alpha', \beta', \sigma)$.
 \end{proof}
 
+\anothercomment{The above proof is not correct.\\
+\\You are trying to show: \\
+$$\underset{\sigma_1}{\underbrace{APPLY(APPLY(\sigma, T_1), T_2))}} = \underset{\sigma_2}{\underbrace{APPLY(APPLY(\sigma, T_2), T_3))}}$$
+The best you can show is that $\forall i . \sigma_1[i] = \sigma_2[i]$.  You need some sort of ``axiom of extensionality'' (a la Leibniz) that says that $\forall i . \sigma_1[i] = \sigma_2[i] \Longrightarrow \sigma_1 = \sigma_2$.\\
+\url{http://plato.stanford.edu/entries/lambda-calculus/\#ExtBasTheL}}
+\\
+\\
 \comment{I have to point out it's never possible to compute the ``Observed'' area; it appears to be $\Pi^0_1$.  Since observed area is non-constructive, I recommend the authors just get rid of the above or put it in an appendix of curios or something.  This isn't a treatise on logic.}
 
 \begin{defn}[Disjointness]
-Two transactions are \emph{disjoint} if there exists a partition such that the observed area of each transaction is disjoint from the affected area of the other. If two transactions are disjoint then, as shown above, they are commutative.
+Two transactions are \emph{disjoint} if there exists a partition such that the observed area of each transaction is disjoint from the affected area of the other.
 \end{defn}
+
+If two transactions are disjoint then, as shown above, they are commutative.
 
 \begin{note}
 Disjointness does not preclude the observed areas of $T_1$ and $T_2$ from intersecting. However, in the rest of this paper, we will generally follow a stricter criterion where observed areas are not allowed to intersect; this does somewhat reduce the effectiveness of our designs, but it carries the benefit of allowing a substantially simplified analysis.
@@ -214,20 +241,27 @@ The \emph{parent} of a state $\sigma$ is defined as the state $\sigma_{-1}$ such
 \end{defn}
 
 \begin{defn}[Ancestor]
-The set of \emph{ancestors} of a state $\sigma$ is recursively defined via $ANC(\sigma) = \emptyset \; if \; PARENT(\sigma) = \varnothing \; else \; \{PARENT(\sigma)\} \cup ANC(PARENT(\sigma))$.
+The set of \emph{ancestors} of a state $\sigma$ is recursively defined via $ANC(\sigma) = \varnothing \; if \; PARENT(\sigma) = \varnothing \; else \; \{PARENT(\sigma)\} \cup ANC(PARENT(\sigma))$.
 \end{defn}
 
 \begin{defn}[Weight function]
 A \emph{weight function} is a function $W(u, \sigma)$ on the set of users $u_1 \ldots u_n$ (each of which is assumed to have a private and public key) in the context of a state $\sigma$, such that for all users in the network, $\sum_{i=0}^n W(u_i, \sigma) = 1$. ``$k$ of all weight'' will be used to denote the idea of a subset of users such that the sum of their weights is $k$. 
 \end{defn}
 
+\anothercomment{Okay, so here's where we have problems.  It sort of makes sense for $W$ to be linear for BitCoin, since every miner contributes to the over-all hashing power of the network linearly in their own hashing power.\\
+\\
+But in a voting system like Tendermint, voting power for bonded stake is \textbf{NOT} linear - the weight of a particular individual is more appropriately calculated using their Shapley value \url{http://en.wikipedia.org/wiki/Shapley_value}.}
+
 \begin{note}
 A combination of a weighting function and a threshold $0.5 < t < 1$ produces a quorum system.
 \end{note}
+\anothercomment{This note isn't very helpful, and the authors don't seem to use this anywhere }
 
 \begin{defn}[State root function]
-A \emph{state root function} is a collision-proof preimage-proof function $R(\sigma) \rightarrow x \in D$ for some compactly representable domain $D$ (usually $D = \{0,1\}^{256}$). $R$ can also be applied to substates.
+A \emph{state root function} is a collision-proof preimage-proof function $R(\sigma) \rightarrow x \in D$ \anothercomment{This isn't how one presents the type signature of functions in mathematics.  Let $\Sigma$ denote the class of contexts, then to introduce $R$ with its proper domain and range one would write ``$R : \Sigma \to D$''} for some compactly representable domain $D$ (usually $D = \{0,1\}^{256}$). $R$ can also be applied to substates \anothercomment{I wish the authors would call substates shards like everyone else in computer science.  At any rate, one could write $R : \Sigma \cup \Upsilon \to D$ where $\Upsilon$ represents the set of substates of every possible context.}.
 \end{defn}
+
+\anothercomment{$D$ is clearly a range here, so the authors shouldn't use the word ``domain''.  Likewise, what do the authors mean by ``compact''? The topological sense?  A set $S$ in a topology $\tau$ is compact if, for any ``covering'' set $C$ open sets $C \subseteq \tau$ if $S \subseteq \bigcup C$ there is a finite subset $C' \subseteq C$ such that $S \subseteq \bigcup C$.  You haven't defined a topology anywhere, so it doesn't make any sense to use the word ``compact'' here.}
 
 \begin{defn}[Partition-friendliness]
 A state root function is partition-friendly with respect to a particular partitioning scheme if one can compute $R(\sigma)$ by knowing only $R(\sigma[0]), R(\sigma[1]) \ldots R(\sigma[n])$. 
@@ -246,19 +280,20 @@ An altruist is a user that is willing to faithfully follow the protocol even if 
 \end{defn}
 
 \begin{assm}
-There exists a constant $0 < w_a < \frac{1}{3}$ such that at least $w_a$ of weight is altruistic under all major weight functions that are used in cryptoeconomic systems (eg. computational power, stake under deposit, transaction fees paid, transaction coin age burned).
+There exists a constant $0 < w_a < \frac{1}{3}$ such that at least $w_a$ of weight is altruistic under all major weight functions that are used in cryptoeconomic systems (e.g. computational power, stake under deposit, transaction fees paid, transaction coinage burned).
 \end{assm}
 
 \begin{assm}
-A sufficient condition of availabilty is for every $\sigma[i]$ to be in the hands of at least one altruist.
+A sufficient condition of availability is for every $\sigma[i]$ to be in the hands of at least one altruist.
 \end{assm}
+\anothercomment{This is wrong.  In BitCoin, if $\frac{1}{2}$ of the ``weight'' doesn't want a transaction to happen, it won't, and the network isn't available to that person.  A DHT doesn't really help.  This is a problem for the Ethereum bomb, for instance.}
 
 \begin{note}
 This follows from our assumption of a working distributed hash table, elaborated on in the next section.
 \end{note}
 
 \begin{defn}[Cryptoeconomic State Machine]
-A \emph{cryptoeconomic state machine} is a tuple $(G, APPLY, P, F)$ where $G$ is a \emph{genesis state}, $APPLY$ is a block-level state transition function and $P$ is a process for determining the next block. The cryptoeconomic state machine maintains a ``current state'' $\sigma$, repeatedly employs $P$ (by incentivizing validators to carry out their individual roles in P) in order to determine a ``next block'' $\beta$, and then sets $\sigma \leftarrow \sigma + \beta$. $F$ is a process which can be used by a user to determine a recent value of $\sigma$. Desired properties for a cryptoeconomic state machine are:
+A \emph{cryptoeconomic state machine} is a tuple $\langle G, APPLY, P, F \rangle$ where $G$ is a \emph{genesis state}, $APPLY$ is a block-level state transition function and $P$ is a process for determining the next block. The cryptoeconomic state machine maintains a ``current state'' $\sigma$, repeatedly employs $P$ (by incentivizing validators to carry out their individual roles in P) in order to determine a ``next block'' $\beta$, and then sets $\sigma \leftarrow \sigma + \beta$. $F$ is a process which can be used by a user to determine a recent value of $\sigma$. Desired properties for a cryptoeconomic state machine are:
 
 \begin{itemize}
 \item
@@ -273,6 +308,7 @@ A \emph{cryptoeconomic state machine} is a tuple $(G, APPLY, P, F)$ where $G$ is
 \emph{Byzantine fault-tolerance}: the above guarantees remain even if up to $k$ of all weight (eg. $k = \frac{1}{3}$) fails to follow the protocol and/or misbehaves arbitrarily (including irrationally).
 \item
 \emph{Economic security}: the above guarantees survive even if all users except altruists are rational, and are being bribed by an attacker with a budget less than $b \times  L$ where $b$ is a constant and $L$ is some metric of the value of economic activity in the system.
+
 \item
 \emph{Complete security}: the guarantee of economic security survives even if up to $k$ of all weight misbehaves arbitrarily (including irrationally).
 \end{itemize}
@@ -294,6 +330,16 @@ The definition of economic security used above is taken from Vlad Zamfir's model
 The ``economic metric of activity'' used to define economic security, transaction load, and the number of users are all proportional to each other.
 \end{assm}
 
+\anothercomment{This can't possibly be right. \\
+\\
+Let's go over a counter-example: assume there's a binary PoS voting game with 5 players. The first player has \$1 million, the second \$2 million, etc. \\
+\\
+The number of scenarios where the second player can effect the outcome is just one up to symmetry: where there's a split with the first and fifth player on one side and the third and fourth players on the other side (and vice versa).\\
+\\
+Suppose that the fifth player quietly buys the first player out, unbeknownst to the public.\\
+\\
+Player 2's vote now never matters.  However, the mechanism, to the public, appears to have identical economic security.  So you can't just count security deposits, you have to think carefully about whether they even matter based on how the over-all system is architected.}
+
 \begin{defn}[Validators]
 The \emph{validators} in a cryptoeconomic state machine are either (i) the users that are involved in the consensus process of agreeing on blocks, or (ii) the set of entities that must provide a signature validating a specific object in order for that object to be accepted by the protocol.
 \end{defn}
@@ -302,11 +348,13 @@ The \emph{validators} in a cryptoeconomic state machine are either (i) the users
 There exists some constant $b$ such that at least $b \times  L$ worth of economic power is concentrated in the hands of either individuals or groups of individuals capable of coordination that each have access to at least $\frac{b \times  L}{N^{1-\epsilon}}$ funds \citep{piketty_capital_2014}.
 \end{assm}
 
-\comment{Nobody in the real world cares about Kolmogorov complexity.  I suggest getting rid of all mention of it, because it's just confusing.  It's undecidable (in particular, $\sigma^0_1$), so nobody can actually calculate it anyway.  For a refresher on theory of computation, see wikipedia: \url{http://en.wikipedia.org/wiki/Arithmetical_hierarchy}.}
+\anothercomment{What's $N$ here? Also, as I stated before, if there's a linearity assumption here, which probably inappropriate for Tendermint and other voting games.  Someone can have far more voting power than their relative wealth because of the super linearity of the Shapley-Shubik power index.}
 
 \begin{defn}[Scalability]
 A cryptoeconomic state machine is \emph{scalable} if, assuming each individual user has computational power, storage and bandwidth bounded above by $N$, the state machine can process $\omega(N)$ (ie. strictly greater than $O(N)$) transactions (with combined Kolmogorov complexity $\omega(N)$) and operate on states of size and Kolmogorov complexity $\omega(N)$.
 \end{defn}
+
+\comment{Nobody in the real world cares about Kolmogorov complexity.  I suggest getting rid of all mention of it, because it's just confusing.  It's undecidable (in particular, $\sigma^0_1$), so nobody can actually calculate it anyway.  For a refresher on theory of computation, see wikipedia: \url{http://en.wikipedia.org/wiki/Arithmetical_hierarchy}.}
 
 \begin{lem}
 It is not possible to achieve scalability for arbitrary state transition functions.
@@ -322,7 +370,7 @@ Because of the previous lemma, we can see that the introduction of scalability w
 
 \chapter{Cryptographic and Cryptoeconomic Primitives}
 
-\comment{I don't really see the point of this chapter.  It's not about blockchain scaling, it doesn't mention social choice theory problems inherent in proof of stake, and it detracts from the rest of the book.}
+\comment{Summary: This chapter introduces crypto economic  }
 
 \begin{defn}[Sampling function]
 A \emph{sampling function} is a function $SAMPLE(W, k, m) \rightarrow {u_1 \ldots u_m}$ that takes a weight function $W$, a salt $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users.
@@ -356,9 +404,10 @@ A \emph{Merkle branch} is the tuple $(V, \pi)$.
 \begin{defn}[Cryptoeconomically secure entropy source]
 A cryptoeconomically secure entropy source is a protocol inside of a state transition function in a cryptoeconomic state machine that maintains an internal, regularly changing, value $v \in D$ for some domain $D$ (usually $\{0,1\}^{256}$) with the following desired properties:
 \begin{itemize}
-\item \emph{Unpredictablity}: there exists a value $M$ such that at time $t_0 + M$ the probability distribution of $v$ conditional only on information available at time $t_0$ is statistically indistinguishable from the random distribution \comment{You mean *uniform* distribution?  Why not just say ``must act like an unbiased uniform random number generator that can pass the diehard tests'' although as we all know those are a massive PITA\ldots}. That is, an agent with only information available at time $t_0$ cannot determine a value $x$ such that $v = x$ with probability that is not in the range $[\frac{1 - \epsilon}{|D|}, \frac{1 + \epsilon}{|D|}]$ for cryptographically negligible $\epsilon$.
+\item \emph{Unpredictablity}: there exists a value $M$ such that at time $t_0 + M$ the probability distribution of $v$ conditional only on information available at time $t_0$ is statistically indistinguishable from the random distribution \comment{Do the authors mean *uniform* distribution?}. That is, an agent with only information available at time $t_0$ cannot determine a value $x$ such that $v = x$ with probability that is not in the range $[\frac{1 - \epsilon}{|D|}, \frac{1 + \epsilon}{|D|}]$ for cryptographically negligible $\epsilon$.
 \item \emph{Uninfluenceability (I)}: For any predicate $P$ which the value $v$ would have at some given future time with probability $p$ assuming everyone correctly follows the specified protocol, the cost of making the value have that predicate with probability $p' > p$ is bounded below by $b \times  L \times  (p' - p)$ where $b$ is a constant independent of $P$ and $L$ is some economic metric of activity in the state machine.
 \item \emph{Uninfluenceability (II)}: There exist constants $k$ and $b$ such that for any predicate $P$ which the value $v$ would have at some given future time with probability $p$ assuming everyone honestly follows the protocol, an actor controlling less than $k$ of the weight can increase the probability to at most $p' = p \times  (1 + b)$.
+\anothercomment{Just to repeat myself, this works in BitCoin PoW, NXT and PeerCoin type hybrid PoW/PoS systems. Tendermint fails to satisfy these assumptions -- there does not appear to be a constant $b$ that serves for Uninfluencibility according to these definitions.}
 \end{itemize}
 \end{defn}
 
@@ -373,7 +422,7 @@ $E(\sigma + \beta) = sha256(E(\sigma) + V(\beta))$ where $V(\beta)$ is the block
 \end{exmp}
 
 \begin{assm}
-For any time internal $I$, there exists some fixed probability $p_o(I)$ such that a node randomly selected according to the weight function used to measure a cryptoeconomic state machine's Byzantine fault tolerance can be expected to be offline for at least the next $I$ seconds starting from any particular point in time with at least probability $p_o$.
+For any time interval $I$, there exists some fixed probability $p_o(I)$ such that a node randomly selected according to the weight function used to measure a cryptoeconomic state machine's Byzantine fault tolerance can be expected to be offline for at least the next $I$ seconds starting from any particular point in time with at least probability $p_o$.
 \end{assm}
 
 \begin{note}
@@ -391,13 +440,16 @@ In practice, the second criterion is important for security, whereas the first c
 \begin{lem}
 The NXT algorithm described above satisfies the conditions for being a cryptoeconomically secure entropy source.
 \end{lem}
+\anothercomment{If this is true, what is $b$, the constant of Uninfluencibility? The proof below isn't clear on how $b$ is calculated.}
 \begin{proof}
-To prove unpredictability, we note that the NXT blockchain produces a block every minute, and so the update $v \leftarrow sha256(v, V(\beta))$ takes place once a minute. During each round of updating, there is a probability $1 - p_o(60)$ that the primary signer will be online, and $p_o(60)$ that the signer will be offline and thus a secondary signer will need to produce the block. Hence, after $\frac{1}{-log(p_o(60))}$ blocks, there is a probability $p \approx \frac{1}{2}$ that the resulting value will be the ``default value'' obtained from updating $v$ with the primary signers' public keys at each block, and a $p \approx \frac{1}{2}$ probability that the resulting value will be different. We model 512 iterations of this process as a tree, with all leaves being probability distributions over sequences of 512 public keys of signers, where all probability distributions are disjoint (ie. no sequence appears with probability greater than zero in multiple leaves). By random-oracle assumption of $sha256$, we thus know that we have a set of $2^{512}$ independently randomly sampled probability distributions from $\{0,1\}^{256}$, and so each value will be selected an expected $\{0,1\}^{256}$ times, with standard deviation $2^{128}$. Hence, the probability distribution is statistically indistinguishable from a random distribution.
+To prove unpredictability, we note that the NXT blockchain produces a block every minute, and so the update $v \leftarrow sha256(v, V(\beta))$ takes place once a minute. During each round of updating, there is a probability $1 - p_o(60)$ that the primary signer will be online, and $p_o(60)$ that the signer will be offline and thus a secondary signer will need to produce the block. Hence, after $\frac{1}{-log(p_o(60))}$ blocks, there is a probability $p \approx \frac{1}{2}$ that the resulting value will be the ``default value'' obtained from updating $v$ with the primary signers' public keys at each block, and a $p \approx \frac{1}{2}$ probability that the resulting value will be different. We model 512 iterations of this process as a tree, with all leaves being probability distributions over sequences of 512 public keys of signers, where the sample spaces of these probability distributions are disjoint (ie. no two leaves share the same sequence). By random-oracle assumption of $sha256$, we thus know that we have a set of $2^{512}$ independently randomly sampled probability distributions from $\{0,1\}^{256}$, and so each value will be selected an expected $\{0,1\}^{256}$ times, with standard deviation $2^{128}$. Hence, the probability distribution is statistically indistinguishable from a random distribution.
  
-To show that the first uninfluenceability criterion holds true, note that the only way to manipulate the result is for the block proposer to disappear, leading to another proposer taking over. However, this action is costly for the proposer as the proposer loses a block reward. The optimal strategy is to disappear with probability $0 < q \leq 1$ only when the predicate will be unsatisfied with the proposer participating but will be satisfied with the next proposer partipating; if a predicate has probability $p$ this entails disappearing $p \times  (1-p) \times  q$ of the time, meaning that the predicate will be satisfied $p + p \times  (1-p) \times  q$ of the time instead of $p$ of the time, a probability increment of $p \times  (1-p) \times  q$ will have a cost of $p \times  (1-p) \times  q \times  R$ if $R$ is the signing reward (whose real value is proportional to the quantity of transaction fees, a reasonable metric of economic activity). Hence, the desired condition holds true with $b = 1$.
+To show that the first uninfluenceability criterion holds true, note that the only way to manipulate the result is for the block proposer to disappear, leading to another proposer taking over. However, this action is costly for the proposer as the proposer loses a block reward. The optimal strategy is to disappear with probability $0 < q \leq 1$ only when the predicate will be unsatisfied with the proposer participating but will be satisfied with the next proposer participating; if a predicate has probability $p$ this entails disappearing $p \times  (1-p) \times  q$ of the time, meaning that the predicate will be satisfied $p + p \times  (1-p) \times  q$ of the time instead of $p$ of the time, a probability increment of $p \times  (1-p) \times  q$ will have a cost of $p \times  (1-p) \times  q \times  R$ if $R$ is the signing reward (whose real value is proportional to the quantity of transaction fees, a reasonable metric of economic activity). Hence, the desired condition holds true with $b = 1$.
 
 To show that the second uninfluenceability criterion holds true, note that when one is not the signer, one has no influence on the entropy, and when one is the signer one has the ability to not sign and instead defer to the next signer. Hence, an attacker controlling $\frac{1}{k}$ of all signing slots will be able to defer to the second signer $\frac{1}{k}$ of the time, to the third signer $\frac{1}{k^2}$ of the time (by being in the first two slots simultaneously), etc, so in total such an attacker will on average be able to choose between $1 + \frac{1}{k-1}$ values and thus multiply the probability of a desired predicate by a factor of $1 + \frac{1}{k-1}$. If the attacker controls $\frac{1}{3}$ of all signing slots, the result will thus be increasing the probablity by a factor of $\frac{3}{2}$.
 \end{proof}
+
+\anothercomment{Note: One of the apparently drawbacks of ``uninfluencibility'' is that it drastically reduces processing speed.  NXT is only 9 times faster than BitCoin (although they have very low operating costs).}
 
 \begin{note}
 The above algorithm is only one of a class of algorithms that try to derive entropy from individual faults. There are also other approaches for deriving entropy, including $N-of-N$ commit-reveal protocols, relying on at least one of the participants to be altruistic and refuse to share their entropy with the other participants. It is an open problem to determine if one can come up with cryptoeconomically secure entropy sources cheaper than proof-of-work that rely purely on a rationality assumption.
@@ -406,6 +458,8 @@ The above algorithm is only one of a class of algorithms that try to derive entr
 \begin{note}
 The above algorithm is NOT \emph{downward-uninfluenceable}. If there is a predicate $P$ with low probability, then one can influence its probability down to $P \times  w_a$ by simply bribing all validators who would have created a block that changed the entropy value to something satisfying $P$ to instead sit their turn out and let the next validator make a block, almost certainly not triggering $P$. The $w_a$ multiplier comes from the fact that we are assuming a subset of validators that cannot be bribed. However, for predicates with medium probability, one can derive a certain degree of resistance to downward influence simply by applying the upward-uninfluenceability guarantees to $\neg P$.
 \end{note}
+
+\anothercomment{The authors need to define \emph{downward-uninfluenceable} and \emph{upward-uninfluenceable} somewhere.}
 
 \begin{defn}[zk-SNARK scheme]
 A zk-SNARK scheme is a tuple of three functions $G$, $P$, $V$, where:
@@ -424,8 +478,10 @@ Additionally, $\pi$ should reveal no information about the value of $I_s$. Schem
 We provide algorithms which achieve scalability without zk-SNARKs, however we will show how zk-SNARKs can also be used in scalable blockchain protocols.
 \end{note}
 
+\anothercomment{It's not clear why zk-SNARKs are introduced here if they aren't used.}
+
 \begin{defn}[Decentralized oracle scheme]
-A decentralized oracle scheme is a mechanism which asks a set of participants to provide an answer to a subjective question (eg. "what was the temperature in San Francisco on 2015 Jan 9?"), and attempts to incentivize the participants to answer correctly. The output of the mechanism is generally considered to be the majority answer, and as input the scheme usually requires an economic subsidy.
+A decentralized oracle scheme is a mechanism which asks a set of participants to provide an answer to a subjective question (eg. ``what was the temperature in San Francisco on 2015 Jan 9?"), and attempts to incentivize the participants to answer correctly. The output of the mechanism is generally considered to be the majority answer, and as input the scheme usually requires an economic subsidy.
 \end{defn}
 
 \begin{exmp}
@@ -439,11 +495,10 @@ A participant whose vote aligns with the majority vote receives a reward of $P$.
 A participant whose vote does not align with the majority vote receives a reward of $0$.
 \end{itemize}
 SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a formal definition of economic security it cannot be viewed as having any security margin at all, though the difficulty of the inherent coordination problem may still allow the scheme to function in practice. An attacker with a budget greater than $P$ and the ability to credibly commit to to providing a bribe under certain conditions in the future can, assuming rationality of the participants, effect an equilibrium flip toward a wrong answer at no cost \citep{buterin_p_2015}.
+\anothercomment{In general, voting games without some credible KYC mechanism and egalitarian voting rights tend to marginalize members with minority voting power, often rendering them with no actual power (in terms of Shapley Shubik) at all.  This is a much bigger concern than $P+\epsilon$ attacks.}
 \end{exmp}
 
 \begin{note}
-
-\comment{This analysis is totally wrong. a sobering analysis would point out that the Augur is going to have a "Trust" presale.  Since investors will naturally follow a pareto distribution, so will the initial allocation of trust.  So this analysis where all parties are assumed to have equal voting power is totally bogus -- an honest analysis would model voting power as following a Pareto distribution.  So I'd throw this section away, since it's totally bogus.}
 
 There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of \emph{TruthCoin}-style counter-coordination \citep{sztorc_trustless_2014}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit.  This situation is presented in Figure \ref{fig:unadulterated_truthcoin}. The game-theoretic argument is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe, presented in Figure \ref{fig:bribed_truthcoin}.
 
@@ -463,13 +518,9 @@ There are two ways to make SchellingCoin-like protocols more powerful by increas
 \end{minipage}
 \end{figure}
 
-%\begin{center}
-%\includegraphics[width=0.4\textwidth]{figs/pdfs/schellingcoin_payoff1.pdf}
-%\includegraphics[width=0.4\textwidth]{figs/pdfs/schellingcoin_payoff2.pdf}
-%\end{center}
-
 
 This approach accepts that attackers with a budget even larger than the size of everyone's security deposits will be able to cause everyone to flip to voting incorrectly as an equilibrium, but advocates note that attackers that large will also be able to arbitrarily disrupt the underlying blockchain consensus anyway.
+\anothercomment{As I've pointed out previously, you can't really measure security in a voting game by just counting security deposits.  Shapley and Shubik themselves present a voting game where 50\% of the ``weight'' in a voting game is powerless, and everything is decided by a single dictator: \url{http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=8699223&fileId=S0003055400000095}}
 
 The second is to fall back to ``subjective resolution'': if the majority of voters vote incorrectly, then it is up to \emph{the users} to simply reject that block as invalid and go along with the block that they see as correct. This reliance on human judgement at the last level makes the budget required for any kind of zero-cost ``equilibrium flip'' attack essentially infinite, instead requiring the attacker to bribe everyone outright and even then resulting in only a moderately large inconvenience for users, not a total failure. The process does impose inconveniences to users, but properly built designs that use decentralized oracle schemes will use the mechanism only as the last step of a fallback game in a similar function as nuclear deterrence; in practice it will almost never be used. The security claim essentially becomes something like ``by paying \$100 million, an attacker has the ability to force users to visit their favorite internet forum and locate a 32-byte hash representing the new fork of the chain to switch to''.
 \end{note}
@@ -483,12 +534,12 @@ The Merkle-branch-based definition of DHT given above can be deduced easily from
 \end{note}
 
 \begin{exmp}
-Kademlia \citep{maymounkov_kademlia:_2002} is an example of a distributed hash table. A more direct implementation of our desired formalism with Merkle branches will be available from IPFS \citep{benet_ipfs_2014}.
+Kademlia \citep{maymounkov_kademlia:_2002} is an example of a distributed hash table. A more direct implementation of our desired formalism with Merkle branches will be available in IPFS \citep{benet_ipfs_2014}.
 \end{exmp}
 
 \chapter{Global Variables}
 
-\comment{This chapter is too small, perhaps you should lump it in with the definitions chapter}
+\comment{This chapter is too small, perhaps the authors should lump it in with the definitions chapter}
 
 In the rest of this document we will use the following variables:
 

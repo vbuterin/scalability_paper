@@ -50,7 +50,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -578,7 +578,7 @@
     <flowRoot
        xml:space="preserve"
        id="flowRoot3536-8-3-0"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;font-family:Sans"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        transform="translate(168.53097,210.69171)"><flowRegion
          id="flowRegion3538-4-7-0"><rect
            id="rect3540-2-2-7"
@@ -586,11 +586,11 @@
            height="62.857143"
            x="274.28571"
            y="416.95163"
-           style="fill:#ff0000" /></flowRegion><flowPara
+           style="fill:#000000" /></flowRegion><flowPara
          id="flowPara3542-4-3-2">β</flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot3544-9-8-0"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;font-family:Sans"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        transform="translate(309.95954,66.405998)"><flowRegion
          id="flowRegion3546-0-1-9"><rect
            id="rect3548-9-76-5"
@@ -598,9 +598,9 @@
            height="71.428574"
            x="157.14285"
            y="595.52307"
-           style="fill:#ff0000" /></flowRegion><flowPara
+           style="fill:#000000" /></flowRegion><flowPara
          id="flowPara3550-8-34-3"
-         style="font-size:20px;fill:#ff0000">7</flowPara></flowRoot>    <flowRoot
+         style="font-size:20px;fill:#000000">7</flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot4316"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -639,7 +639,7 @@
        inkscape:connector-curvature="0" />
     <path
        style="fill:none;stroke:#ff0000;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 408.48641,608.48002 9.63571,-0.20724"
+       d="m 408.5782,608.38823 92.30927,-0.0237"
        id="path4324-9"
        inkscape:connector-curvature="0" />
     <path
@@ -664,12 +664,12 @@
        inkscape:connector-curvature="0" />
     <path
        style="fill:none;stroke:#ff0000;stroke-width:6;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 418.31977,605.50373 -0.031,100.03105"
+       d="m 500.31977,605.50373 -0.031,100.03105"
        id="path4324-6-7-9"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;stroke:#ff0000;stroke-width:3.99028754;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 417.09525,702.71873 129.5609,-0.11323"
+       style="fill:none;stroke:#ff0000;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 502.71499,702.81327 44.0357,-0.30231"
        id="path4324-6-0"
        inkscape:connector-curvature="0" />
     <path

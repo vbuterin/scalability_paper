@@ -1,5 +1,5 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,url,array,graphicx}
+\usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,url,array,graphicx,xspace}
 \usepackage[english]{babel}
 
 
@@ -21,6 +21,26 @@
 \newtheorem*{rem}{Remark}
 \newtheorem*{note}{Note}
 
+\newcommand{\ie}{i.e.\@\xspace}
+\newcommand{\eg}{e.g.\@\xspace}
+
+\renewcommand{\emptyset}{\ensuremath{\varnothing}}
+%\newcommand{\makeintoafunction}[1]{\textsc{#1}}
+\newcommand{\makeintoafunction}[1]{\textit{\uppercase{\small #1}}}
+\newcommand{\APPLY}{\makeintoafunction{apply}}
+\newcommand{\SAFE}{\makeintoafunction{safe}}
+\newcommand{\AFFECTED}{\makeintoafunction{affected}}
+\newcommand{\OBSERVED}{\makeintoafunction{observed}}
+\newcommand{\AREA}{\makeintoafunction{area}}
+\newcommand{\VALIDATORS}{\makeintoafunction{validators}}
+\newcommand{\PARENT}{\makeintoafunction{parent}}
+\newcommand{\SAMPLE}{\makeintoafunction{sample}}
+\newcommand{\ANC}{\makeintoafunction{ancestor}}
+\newcommand{\GET}{\makeintoafunction{get}}
+\newcommand{\PGE}{\makeintoafunction{pge}}
+\newcommand{\GDC}{\makeintoafunction{gdc}}
+\newcommand{\PE}{\makeintoafunction{pe}}
+
 \begin{document}
 
 
@@ -31,7 +51,7 @@
 \maketitle
 
 \begin{abstract}
-We propose a technique for achieving scalable blockchain consensus by means of a ``sample-and-fallback'' game: split transactions up into collations affecting small portions of the blockchain state, and require that in order for a collation of transactions to be valid, it must be approved by a randomly selected fixed-size sample taken from a large validator pool. In case a bad collation does pass through employ a mechanism by which a node can ``challenge'' an invalid collation and escalate the decision to a much larger set of validators. Our scheme is designed as a generalized overlay that can be applied to any underlying blockchain consensus algorithm (eg. proof of work, proof of stake, social-network consensus) and almost any state transition function, provided that state changes are sufficiently ``localized''. Our basic designs allow for a network with nodes bounded by $O(N)$ computational power to process a transaction load and state size of $O(N^{2-\epsilon})$, though we also propose an experimental ``stacking'' strategy for achieving arbitrary scalability guarantees up to a maximum of $O(exp(N/k))$ transactional load.
+We propose a technique for achieving scalable blockchain consensus by means of a ``sample-and-fallback'' game: split transactions up into collations affecting small portions of the blockchain state, and require that in order for a collation of transactions to be valid, it must be approved by a randomly selected fixed-size sample taken from a large validator pool. In case a bad collation does pass through employ a mechanism by which a node can ``challenge'' an invalid collation and escalate the decision to a much larger set of validators. Our scheme is designed as a generalized overlay that can be applied to any underlying blockchain consensus algorithm (\eg proof of work, proof of stake, social-network consensus) and almost any state transition function, provided that state changes are sufficiently ``localized''. Our basic designs allow for a network with nodes bounded by $O(N)$ computational power to process a transaction load and state size of $O(N^{2-\epsilon})$, though we also propose an experimental ``stacking'' strategy for achieving arbitrary scalability guarantees up to a maximum of $O(exp(N/k))$ transactional load.
 \end{abstract}
 
 \section{Introduction}
@@ -69,14 +89,14 @@ A \emph{transaction} is a piece of data representing an operation that a particu
 \end{defn}
 
 \begin{defn}[State Transition Function]
-A \emph{state transition function} is a function $APPLY(\sigma, \tau) \rightarrow \sigma' \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}.
+A \emph{state transition function} is a function $\APPLY(\sigma, \tau) \rightarrow \sigma' \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $\APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}.
 \end{defn}
 
 For simplicity, we will use the following notation throughout:
 
 \begin{itemize}
 \item
-$APPLY(\sigma, \tau) \rightarrow \sigma'$ becomes $\sigma + \tau = \sigma'$
+$\APPLY(\sigma, \tau) \rightarrow \sigma'$ becomes $\sigma + \tau = \sigma'$
 \item  
 Given an ordered list $T = [\tau_1, \tau_2, \tau_3...]$ and a state $\sigma$, we define $\sigma + T = \sigma + \tau_1 + \tau_2 + ...$
 \item
@@ -100,7 +120,7 @@ A transaction $\tau = (from, to, value, sig)$ is valid in the context of a state
     \item
     $value \ge 0$
     \item
-    $V(from, sig) = 1$ (ie. the signature is valid when verified against the sender public key, so you can't spend an account's money unless you have the corresponding private key)
+    $V(from, sig) = 1$ (\ie the signature is valid when verified against the sender public key, so you can't spend an account's money unless you have the corresponding private key)
     \end{itemize}
 If $\tau$ is invalid, then $\sigma + \tau = \varnothing$. If $\tau$ is valid, then $\sigma + \tau$ is identical to $\sigma$ except:
     \begin{itemize}
@@ -125,7 +145,7 @@ If a block is valid, we define the block-level state transition function with $\
 \end{defn}
 
 \begin{defn}[Blockchain]
-A \emph{blockchain} is a tuple $(G, B)$ where $G$ is a \emph{genesis state} and $B = [\beta_1, \beta_2, \beta_3 ...]$ is an ordered list of blocks. A blockchain is \emph{valid} if every $\beta \in B$ is valid, and so $G + \beta_0 + \beta_1 + ... = \sigma_f$ is a valid state (ie. not $\varnothing$).
+A \emph{blockchain} is a tuple $(G, B)$ where $G$ is a \emph{genesis state} and $B = [\beta_1, \beta_2, \beta_3 ...]$ is an ordered list of blocks. A blockchain is \emph{valid} if every $\beta \in B$ is valid, and so $G + \beta_0 + \beta_1 + ... = \sigma_f$ is a valid state (\ie not $\varnothing$).
 \end{defn}
 
 \begin{defn}[Consensus algorithm]
@@ -144,7 +164,7 @@ The consensus algorithm will in most cases specify additional block validity con
 \item
 The \emph{updating process} consists of thousands of nodes around the world repeatedly attempting to produce blocks with powerful computers until some node finds one satisfying $sha256(\beta) < \frac{2^{256}}{D}$, where $D$ is a difficulty parameter that updates so as to ensure that a block is produced on average every ten minutes. Because $sha256$ is a pseudorandom hash function, there is no way to produce a valid block that is faster than simply trying different modifications to the block data until you eventually produce a block that passes, and this process on average collectively takes the whole network $D$ iterations.
 \item
-The \emph{fork choice rule} consists of choosing the blockchain that has the highest \emph{total difficulty}, ie. the greatest amount of statistically expected computational work placed into building the whole chain.
+The \emph{fork choice rule} consists of choosing the blockchain that has the highest \emph{total difficulty}, \ie the greatest amount of statistically expected computational work placed into building the whole chain.
 \item
 The additional \emph{block validity conditions} are:
     \begin{itemize}
@@ -167,7 +187,7 @@ We define the emsemble of (i) a block-level state transition function and (ii) a
 
 \begin{itemize}
 \item
-\emph{Consistency}: there exists a value $\sigma_f$ such that every node sees a main chain whose near-final state (ie. state after processing all blocks except for the last few) is $\sigma_f$. Ideally, everyone would see a blockchain with the same final state at all times, but nonzero network propagation times mean that an update will always reach some nodes before other nodes, and some consensus algorithms allow for short forks, so consensus on recent values of $\sigma_f$ is the best that we can do.
+\emph{Consistency}: there exists a value $\sigma_f$ such that every node sees a main chain whose near-final state (\ie state after processing all blocks except for the last few) is $\sigma_f$. Ideally, everyone would see a blockchain with the same final state at all times, but nonzero network propagation times mean that an update will always reach some nodes before other nodes, and some consensus algorithms allow for short forks, so consensus on recent values of $\sigma_f$ is the best that we can do.
 \item
 \emph{Data availability}: any part of $\sigma_f$ can be accessed and downloaded from the network if needed.
 \item
@@ -175,16 +195,16 @@ We define the emsemble of (i) a block-level state transition function and (ii) a
 \item
 \emph{Validity}: $\sigma$ only ever attains values that are the result of $G + T$ for some transaction list $T$, where evert $\tau \in T$ has actually been produced by some user at some point in time (potentially implicitly, by producing a block). That is, ``illegal transitions'' that cannot be explained by the sequential application of a set of known transactions do not occur.
 \item
-\emph{Byzantine fault-tolerance}: the above guarantees remain even if up to $k$ of all weight (eg. $k = \frac{1}{3}$), according to some weighting function, fails to follow the protocol and/or misbehaves arbitrarily (including irrationally).
+\emph{Byzantine fault-tolerance}: the above guarantees remain even if up to $k$ of all weight (\eg $k = \frac{1}{3}$), according to some weighting function, fails to follow the protocol and/or misbehaves arbitrarily (including irrationally).
 \item
 \emph{Economic security}: the above guarantees survive even if all users except altruists are rational, and are being bribed by an attacker with a budget less than $b * L$ where $b$ is a constant and $L$ is some metric of the value of economic activity in the system.
 \item
 \emph{Complete security}: the guarantee of economic security survives even if up to $k$ of all weight misbehaves arbitrarily (including irrationally).
 \end{itemize}
 
-Under economic security, we are allowed to assume that, whatever consensus algorithm we use (as long as it's nontrivial), there exists some small constant $w_a$ such that $w_a$ of all weight is altruistic, but we assume that the set of attackers, and the budget of attackers, is larger than the set and budget of altruists (eg. attackers can have weight up to $\frac{1}{3}$, altruists will have at least $\frac{1}{12}$). Note that the introduction of economic limitations does allow us to have somewhat weaker guarantees in some circumstances: for example, if 5\% of the weight is capable of mounting a medium-duration denial of service attack, then that may be acceptable as long as the attack is expensive and the attackers eventually run out of money.
+Under economic security, we are allowed to assume that, whatever consensus algorithm we use (as long as it's nontrivial), there exists some small constant $w_a$ such that $w_a$ of all weight is altruistic, but we assume that the set of attackers, and the budget of attackers, is larger than the set and budget of altruists (\eg attackers can have weight up to $\frac{1}{3}$, altruists will have at least $\frac{1}{12}$). Note that the introduction of economic limitations does allow us to have somewhat weaker guarantees in some circumstances: for example, if 5\% of the weight is capable of mounting a medium-duration denial of service attack, then that may be acceptable as long as the attack is expensive and the attackers eventually run out of money.
 
-The goal of this document can be summarized as follows: given a state $\sigma$ and a state transition function $APPLY$, where the size of the state and the number of transactions is much larger than any single node can independently process, come up with a process to convert $\sigma$ to $\psi$, $T$ to $\kappa$ and $APPLY$ to $APPLY'$, where if $APPLY(\sigma, T) = \sigma'$, $APPLY'(\psi, \kappa) = \psi'$, such that $\psi$ and $\psi'$ can be easily stored within a single node and $APPLY'$ can be processed by a single node (mathematically, we can see this as a kind of \emph{homomorphism}). We will then have the underlying consensus algorithm maintain consensus on the homomorphism of the state instead of the state itself, and will use separate ``bottom-level'' cryptoeconomic machinery to ensure that the underlying transactions and data are all valid.
+The goal of this document can be summarized as follows: given a state $\sigma$ and a state transition function $\APPLY$, where the size of the state and the number of transactions is much larger than any single node can independently process, come up with a process to convert $\sigma$ to $\psi$, $T$ to $\kappa$ and $\APPLY$ to $\APPLY'$, where if $\APPLY(\sigma, T) = \sigma'$, $\APPLY'(\psi, \kappa) = \psi'$, such that $\psi$ and $\psi'$ can be easily stored within a single node and $\APPLY'$ can be processed by a single node (mathematically, we can see this as a kind of \emph{homomorphism}). We will then have the underlying consensus algorithm maintain consensus on the homomorphism of the state instead of the state itself, and will use separate ``bottom-level'' cryptoeconomic machinery to ensure that the underlying transactions and data are all valid.
 
 \section{Mathematical, Cryptographic and Cryptoeconomic Primitives}
 
@@ -197,19 +217,19 @@ A \emph{partitioning scheme} is a way of representing a state as a collection of
 We can visually see a partitioning scheme as follows:
 
 \begin{center}
-\includegraphics[width=250pt]{subspace2.png}
+\includegraphics[width=190pt]{subspace2.png}
 \end{center}
 
 \begin{defn}[Affected area]
-The \emph{affected area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $AFFECTED(\sigma, \tau)$) is the set of subspaces that were changed in the process of applying $\tau$, ie. the set of indices $S$ such that $(\sigma + \tau)[i] \ne \sigma[i]$ if and only if $i \in S$.
+The \emph{affected area} of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $\AFFECTED(\sigma, \tau)$) is the set of subspaces that were changed in the process of applying $\tau$, \ie the set of indices $S$ such that $(\sigma + \tau)[i] \ne \sigma[i]$ if and only if $i \in S$.
 \end{defn}
 
 \begin{center}
-\includegraphics[width=250pt]{subspace1.png}
+\includegraphics[width=300pt]{subspace1.png}
 \end{center}
 
 \begin{defn}[Observed area]
-The \emph{observed area}, or in short \emph{area} (since observed area includes affected area), of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $OBSERVED(\sigma, \tau)$) is the set of subspaces the values of which the result of the transaction depends on, ie. the smallest set of indices $S$ such that (i) $S \supseset AFFECTED(\sigma, \tau)$, and (ii) for any $\psi$ where $\psi[i] = \sigma[i]$ for $i \in S$ (but potentially $\psi[i] \ne \sigma[i]$ for one or more $i \notin S$), if we define $\psi' = \psi + \tau$ and $\sigma' = \sigma + \tau$, we have $\psi'[i] = \sigma'[i]$ for $i \in S$.
+The \emph{observed area}, or in short \emph{area} (since observed area includes affected area), of a transaction (or transaction list) $\tau$ in the context of $\sigma$ (denoted $\AREA(\sigma, \tau)$) is the set of subspaces the values of which the result of the transaction depends on, \ie the smallest set of indices $S$ such that (i) $S \supset \AFFECTED(\sigma, \tau)$, and (ii) for any $\psi$ where $\psi[i] = \sigma[i]$ for $i \in S$ (but potentially $\psi[i] \ne \sigma[i]$ for one or more $i \notin S$), if we define $\psi' = \psi + \tau$ and $\sigma' = \sigma + \tau$, we have $\psi'[i] = \sigma'[i]$ for $i \in S$.
 \end{defn}
 
 \begin{note}
@@ -219,13 +239,13 @@ Ultimately, the observed area is incomputable; to see why, note that a state tra
 \end{note}
 
 \begin{center}
-\includegraphics[width=250pt]{subspace3.png}
+\includegraphics[width=190pt]{subspace3.png}
 \end{center}
 
 The concept of ``area'' is a key component our mechanism for collating transactions and parallelizing execution across the entire network; it allows transactions to be broken up into groups that can be processed at once by a few nodes that happen to fully possess that particular set of subspaces. If two transaction lists have completely disjoint areas, then we know that they can be computed in parallel. Technically, there is an even weaker condition that is sufficient for parallelizability: the \emph{affected area} of each transaction must be disjoint with the (total) \emph{area} of the other. Two observed areas intersecting with each other is not an issue. We will take advantage of this insofar as all transactions are aware of the header chain, but will otherwise employ the stronger criterion for establishing parallel evaluability for simplicity.
 
 \begin{defn}[Sampling function]
-A \emph{sampling function} is a function $SAMPLE(W, k, m) \rightarrow {u_1 ... u_m}$ that takes a weight function $W$, a seed $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users.
+A \emph{sampling function} is a function $\SAMPLE(W, k, m) \rightarrow {u_1 ... u_m}$ that takes a weight function $W$, a seed $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users.
 \end{defn}
 
 \begin{exmp}
@@ -238,16 +258,16 @@ A Merkle tree\cite{merkle} is a mechanism for hashing a large piece of data, whi
 \item
 Use a partition function to split the data into chunks $D[1] ... D[n]$, such that each $D[i]$ has a very small size. Let us define this collection as $L_0(D)$.
 \item
-To determine $L_{i+1}(D)$ (starting from $i = 0$), split $L_i(D)$ into collections of fixed size (eg. 2-16 items) using some deterministic algorithm, and return as $L_{i+1}(D)$ the set of the hashes of the collections. Because there are fewer collections than elements (as each collection has more than one element), the size of $L_{i+1}(D)$ will be less than the size of $L(D)$
+To determine $L_{i+1}(D)$ (starting from $i = 0$), split $L_i(D)$ into collections of fixed size (\eg 2-16 items) using some deterministic algorithm, and return as $L_{i+1}(D)$ the set of the hashes of the collections. Because there are fewer collections than elements (as each collection has more than one element), the size of $L_{i+1}(D)$ will be less than the size of $L(D)$
 \item
 Eventually, this leads to some $L_k(D)$ which has only one element. We call this the \emph{root} of the tree.
 \end{itemize}
 \end{defn}
 
-In a standard Merkle tree, the ``collections'' are always made up of two adjacent elements, eg. if the original data has 32 elements, then $L_1(D)$ is made up of $H(D[1] + D[2])$, $H(D[3] + D[4])$, etc, then $L_2(D)$ is made of up $H(L_1(D)[0] + L_1(D)[1])$, $H(L_1(D)[2] + L_1(D)[3])$, etc. In a Merkle Patricia tree\cite{mpt} used in Ripple and Ethereum, the structure is somewhat more complicated, but with the benefit of greater flexibility in the case where elements are added or deleted from the partition. We are interested in Merkle trees because they can be used to implement two particular very powerful primitives:
+In a standard Merkle tree, the ``collections'' are always made up of two adjacent elements, \eg if the original data has 32 elements, then $L_1(D)$ is made up of $H(D[1] + D[2])$, $H(D[3] + D[4])$, etc, then $L_2(D)$ is made of up $H(L_1(D)[0] + L_1(D)[1])$, $H(L_1(D)[2] + L_1(D)[3])$, etc. In a Merkle Patricia tree\cite{mpt} used in Ripple and Ethereum, the structure is somewhat more complicated, but with the benefit of greater flexibility in the case where elements are added or deleted from the partition. We are interested in Merkle trees because they can be used to implement two particular very powerful primitives:
 
 \begin{defn}[Root function]
-A \emph{root function} is a mapping $R(\sigma) = i \in D$ where $D$ is some domain, usually $\{0,1\}^{256}$, which is preimage-proof and collision resistant, and which also has the property that given a small change to $\sigma$ (ie. changes which have a small affected area according to some partition function), one can very quickly evaluate the new root, even if $\sigma$ is very large.
+A \emph{root function} is a mapping $R(\sigma) = i \in D$ where $D$ is some domain, usually $\{0,1\}^{256}$, which is preimage-proof and collision resistant, and which also has the property that given a small change to $\sigma$ (\ie changes which have a small affected area according to some partition function), one can very quickly evaluate the new root, even if $\sigma$ is very large.
 \end{defn}
 
 \begin{defn}[Merkle proof protocol]
@@ -304,7 +324,7 @@ In practice, the second criterion is important for security, whereas the first c
 The NXT algorithm described above satisfies the conditions for being a cryptoeconomically secure entropy source.
 \end{lem}
 \begin{proof}
-To prove unpredictability, we note that the NXT blockchain produces a block every minute, and so the update $v \leftarrow sha256(v, V(\beta))$ takes place once a minute. During each round of updating, there is a probability $1 - p_o(60)$ that the primary signer will be online, and $p_o(60)$ that the signer will be offline and thus a secondary signer will need to produce the block. Hence, after $\frac{1}{-log(p_o(60))}$ blocks, there is a probability $p \approx \frac{1}{2}$ that the resulting value will be the ``default value'' obtained from updating $v$ with the primary signers' public keys at each block, and a $p \approx \frac{1}{2}$ probability that the resulting value will be different. We model 512 iterations of this process as a tree, with all leaves being probability distributions over sequences of 512 public keys of signers, where all probability distributions are disjoint (ie. no sequence appears with probability greater than zero in multiple leaves). By random-oracle assumption of $sha256$, we thus know that we have a set of $2^{512}$ independently randomly sampled probability distributions from $\{0,1\}^{256}$, and so each value will be selected an expected $\{0,1\}^{256}$ times, with standard deviation $2^{128}$. Hence, the probability distribution is statistically indistinguishable from a random distribution.
+To prove unpredictability, we note that the NXT blockchain produces a block every minute, and so the update $v \leftarrow sha256(v, V(\beta))$ takes place once a minute. During each round of updating, there is a probability $1 - p_o(60)$ that the primary signer will be online, and $p_o(60)$ that the signer will be offline and thus a secondary signer will need to produce the block. Hence, after $\frac{1}{-log(p_o(60))}$ blocks, there is a probability $p \approx \frac{1}{2}$ that the resulting value will be the ``default value'' obtained from updating $v$ with the primary signers' public keys at each block, and a $p \approx \frac{1}{2}$ probability that the resulting value will be different. We model 512 iterations of this process as a tree, with all leaves being probability distributions over sequences of 512 public keys of signers, where all probability distributions are disjoint (\ie no sequence appears with probability greater than zero in multiple leaves). By random-oracle assumption of $sha256$, we thus know that we have a set of $2^{512}$ independently randomly sampled probability distributions from $\{0,1\}^{256}$, and so each value will be selected an expected $\{0,1\}^{256}$ times, with standard deviation $2^{128}$. Hence, the probability distribution is statistically indistinguishable from a random distribution.
  
 To show that the first uninfluenceability criterion holds true, note that the only way to manipulate the result is for the block proposer to disappear, leading to another proposer taking over. However, this action is costly for the proposer as the proposer loses a block reward. The optimal strategy is to disappear with probability $0 < q <= 1$ only when the predicate will be unsatisfied with the proposer participating but will be satisfied with the next proposer partipating; if a predicate has probability $p$ this entails disappearing $p * (1-p) * q$ of the time, meaning that the predicate will be satisfied $p + p * (1-p) * q$ of the time instead of $p$ of the time, a probability increment of $p * (1-p) * q$ will have a cost of $p * (1-p) * q * R$ if $R$ is the signing reward (whose real value is proportional to the quantity of transaction fees, a reasonable metric of economic activity). Hence, the desired condition holds true with $b = 1$.
 
@@ -323,7 +343,7 @@ The above algorithm is NOT \emph{downward-uninfluenceable}. If there is a predic
 A zk-SNARK scheme is a tuple of three functions $G$, $P$, $V$, where:
 \begin{itemize}
 \item
-$G(prog) \rightarrow k$ generates a "verification key" from a program.
+$G(prog) \rightarrow k$ generates a ``verification key'' from a program.
 \item
 $P(prog, I_s, I_p) \rightarrow \pi$ generates a proof that $prog(I_s, I_p)$ for some secret inputs $I_s$ and public inputs $I_p$ is equal to its actual output, $o$.
 \item
@@ -337,7 +357,7 @@ We provide algorithms which achieve scalability without zk-SNARKs, however we wi
 \end{note}
 
 \begin{defn}[Decentralized oracle scheme]
-A decentralized oracle scheme is a mechanism which asks a set of participants to provide an answer to a subjective question (eg. "what was the temperature in San Francisco on 2015 Jan 9?"), and attempts to incentivize the participants to answer correctly. The output of the mechanism is generally considered to be the majority answer, and as input the scheme usually requires an economic subsidy.
+A decentralized oracle scheme is a mechanism which asks a set of participants to provide an answer to a subjective question (\eg ``what was the temperature in San Francisco on 2015 Jan 9?''), and attempts to incentivize the participants to answer correctly. The output of the mechanism is generally considered to be the majority answer, and as input the scheme usually requires an economic subsidy.
 \end{defn}
 
 \begin{exmp}
@@ -367,11 +387,11 @@ The second is to fall back to ``subjective resolution'': if the majority of vote
 \end{note}
 
 \begin{defn}[Distributed hash table]
-A distributed hash table is a mechanism which stores a potentially very large number of chunks of data on a decentralized network in order to allow network-connected nodes easy access to them. For our purposes, we are particularly interested in a \emph{verifiable decentralized data store} which gives network-connected nodes access to a function $GET(\rho, i) \rightarrow (V, \pi)$ where $(V, \pi)$ is the Merkle branch of $\sigma[i]$ where $\rho = R(\sigma)$; however, given that Merkle tree protocols consist simply of repeated reverse-hash-lookup queries, this definition can easily be deduced from the more conventional definition of providing a function $GET(h) \rightarrow x$ where $h = H(x)$ for some hash function.
+A distributed hash table is a mechanism which stores a potentially very large number of chunks of data on a decentralized network in order to allow network-connected nodes easy access to them. For our purposes, we are particularly interested in a \emph{verifiable decentralized data store} which gives network-connected nodes access to a function $\GET(\rho, i) \rightarrow (V, \pi)$ where $(V, \pi)$ is the Merkle branch of $\sigma[i]$ where $\rho = R(\sigma)$; however, given that Merkle tree protocols consist simply of repeated reverse-hash-lookup queries, this definition can easily be deduced from the more conventional definition of providing a function $\GET(h) \rightarrow x$ where $h = H(x)$ for some hash function.
 \end{defn}
 
 \begin{note}
-$GET$ should work with overwhelmingly high probability provided that (i) $(V, \pi)$ has at least once been in the hands of at least one altruist, and (ii) the total quantity of data stored in the DHT is at most $\frac{N * n}{k}$ where $N$ is the computational and data storage capacity of a node, $n$ is the number of nodes and $k$ is a constant. We will generally assume that there is an upper bound on the average number of nodes interested in a particular subspace, and so in the rest of this document we will simply assume that the DHT works.
+$\GET$ should work with overwhelmingly high probability provided that (i) $(V, \pi)$ has at least once been in the hands of at least one altruist, and (ii) the total quantity of data stored in the DHT is at most $\frac{N * n}{k}$ where $N$ is the computational and data storage capacity of a node, $n$ is the number of nodes and $k$ is a constant. We will generally assume that there is an upper bound on the average number of nodes interested in a particular subspace, and so in the rest of this document we will simply assume that the DHT works.
 \end{note}
 
 \begin{exmp}
@@ -405,7 +425,7 @@ $\tau$ will represent transactions, $\beta$ will represent blocks and block head
 
 \begin{itemize}
 \item
-There exists some constant $w_a$ such that at least $w_a$ of weight is altruistic (ie. willing to follow the protocol even ignoring the potential for greater monetary gains from violating it)
+There exists some constant $w_a$ such that at least $w_a$ of weight is altruistic (\ie willing to follow the protocol even ignoring the potential for greater monetary gains from violating it)
 \item
 The number of transactions, the potential budget of attackers, the potential budget of altruists, and any economic metric of activity $L$ that we use for the purposes of measuring economic security are all proportional to each other.
 \item
@@ -419,14 +439,14 @@ As soon as data makes it into the hands of at least one altruist, it will propag
 \item
 The underlying consensus algorithm works, and has all security properties that are desired.
 \item
-The underlying consensus prevents censorship of transactions in the long term; ie. there is some period of time $T_c$ within which a transaction will almost certainly be accepted into the network.
+The underlying consensus prevents censorship of transactions in the long term; \ie there is some period of time $T_c$ within which a transaction will almost certainly be accepted into the network.
 \end{itemize}
 
 \section{A Byzantine-fault-tolerant Scalable Consensus Overlay}
 
 Now, let us define the core part of our scheme. As described in a previous section, the mechanism can most simply be formally described as using any underlying consensus algorithm to keep track not of the state, but of a compact homomorphism (``top level'') of the state, and then building separate (``bottom-level'') machinery to collaboratively ensure that the underlying state transitions are legitimate.
 
-The basic mechanism is this. Suppose that $\sigma$ is partitioned using some partition function into $n$ parts. If $\sigma$ is partitioned into a map $\{i: \sigma[i]\}$, we define $\psi$ as the map $\{i: R(\sigma[i])\}$. We assume the existence of a coarse-grained partition function as well as the existence of a fine-grained partition function which converts $\sigma[i]$ into a map $\{j: \sigma[i][j]\}$, where each $\sigma[i][j]$ is constant-size (eg. an account). We then define an object called a \emph{transaction collation}, which consists of three components:
+The basic mechanism is this. Suppose that $\sigma$ is partitioned using some partition function into $n$ parts. If $\sigma$ is partitioned into a map $\{i: \sigma[i]\}$, we define $\psi$ as the map $\{i: R(\sigma[i])\}$. We assume the existence of a coarse-grained partition function as well as the existence of a fine-grained partition function which converts $\sigma[i]$ into a map $\{j: \sigma[i][j]\}$, where each $\sigma[i][j]$ is constant-size (\eg an account). We then define an object called a \emph{transaction collation}, which consists of three components:
 
 \begin{itemize}
 \item
@@ -435,9 +455,9 @@ $T$, a list of transactions
 A \emph{header} $H$, consisting of:
     \begin{itemize}
     \item
-    $AP$, the set of previous state roots $\{i: R(\sigma[i])$ for $i \in OBSERVED(\sigma, T)\}$
+    $AP$, the set of previous state roots $\{i: R(\sigma[i])$ for $i \in \AREA(\sigma, T)\}$
     \item
-    $AN$, the set of new state roots $\{i: R(\sigma'[i])$ for $i \in OBSERVED(\sigma, T)\}$
+    $AN$, the set of new state roots $\{i: R(\sigma'[i])$ for $i \in \AREA(\sigma, T)\}$
     \item
     $S = [s_1 ... s_m]$, an array of signatures
     \item
@@ -447,26 +467,26 @@ A \emph{header} $H$, consisting of:
 $D$, the set of Merkle branches for the observed area of $T$ on $\sigma$ on the fine-grained partition level.
 \end{itemize}
 
-We also add to the top-level state $\psi$ a pool of validators $V(\psi)$. In order to achieve economic security, we will later recommend that these validators hold security deposits, but if super-protocol social mechanisms are allowed to play a dominant regulatory role then some security can be achieved under the weaker condition that the validators have persistent identities, and if the only goal is Byzantine fault tolerance and not economic security then all that matters is that it is hard to become a validator and there are many of them. Ideally, top-level consensus participants (eg. Tendermint stakeholders, miners) and validators would be the same group.
+We also add to the top-level state $\psi$ a pool of validators $V(\psi)$. In order to achieve economic security, we will later recommend that these validators hold security deposits, but if super-protocol social mechanisms are allowed to play a dominant regulatory role then some security can be achieved under the weaker condition that the validators have persistent identities, and if the only goal is Byzantine fault tolerance and not economic security then all that matters is that it is hard to become a validator and there are many of them. Ideally, top-level consensus participants (\eg Tendermint stakeholders, miners) and validators would be the same group.
 
-Additionally, we add a cryptoeconomically secure entropy source, $E(\psi)$. Finally, we select some sample function, and we define $VALIDATORS(H, \psi) = SAMPLE(W, E(\psi) + AP, m)$, selecting $m$ random validators for the collation using the entropy source $E$ and the previous state root set $AP$, as a source of entropy (we need additional entropy alongside $E$ so as to ensure that different collations have different validator pools, and $AP$ is used (in sorted order) because modifying it is expensive: removing a state root requires throwing away transactions, and adding a state root requires taking up space, making the entity including the transaction have to pay the opportunity cost of including another collation in that spot). An alternative is to simply use a small amount of proof of work as the secondary source of randomness; this will also help decrease the number of collations to a manageable quantity.
+Additionally, we add a cryptoeconomically secure entropy source, $E(\psi)$. Finally, we select some sample function, and we define $\VALIDATORS(H, \psi) = \SAMPLE(W, E(\psi) + AP, m)$, selecting $m$ random validators for the collation using the entropy source $E$ and the previous state root set $AP$, as a source of entropy (we need additional entropy alongside $E$ so as to ensure that different collations have different validator pools, and $AP$ is used (in sorted order) because modifying it is expensive: removing a state root requires throwing away transactions, and adding a state root requires taking up space, making the entity including the transaction have to pay the opportunity cost of including another collation in that spot). An alternative is to simply use a small amount of proof of work as the secondary source of randomness; this will also help decrease the number of collations to a manageable quantity.
 
-When a collation is passed around the network, the entire ensemble $\kappa = (T, H, D)$ is included. From the point of view of the top-level consensus, however, only $H$ exists, and $H$ ends up playing the role of a ``transaction'' from the top-level consensus's point of view. For the purposes of defining $APPLY'$, the top-level state transition function, we say that a collation header $H$ is valid in the context of $\psi$ if and only if the following are all true:
+When a collation is passed around the network, the entire ensemble $\kappa = (T, H, D)$ is included. From the point of view of the top-level consensus, however, only $H$ exists, and $H$ ends up playing the role of a ``transaction'' from the top-level consensus's point of view. For the purposes of defining $\APPLY'$, the top-level state transition function, we say that a collation header $H$ is valid in the context of $\psi$ if and only if the following are all true:
 
 \begin{itemize}
 \item
-For all $i \in AP$, $\psi[i] = AP[i]$ (ie. the collation's pre-state matches up with the actual pre-state)
+For all $i \in AP$, $\psi[i] = AP[i]$ (\ie the collation's pre-state matches up with the actual pre-state)
 \item
-$S$ includes valid signatures from at least two thirds of $VALIDATORS(H, \psi)$
+$S$ includes valid signatures from at least two thirds of $\VALIDATORS(H, \psi)$
 \end{itemize}
 
 If $H$ is valid, we set $\psi'$ by:
 
 \begin{itemize}
 \item
-For all $i \in OBSERVED(\sigma, T)$, $\psi'[i] = AN[i]$
+For all $i \in \AREA(\sigma, T)$, $\psi'[i] = AN[i]$
 \item
-For all $i \notin OBSERVED(\sigma, T)$, $\psi'[i] = \psi[i]$
+For all $i \notin \AREA(\sigma, T)$, $\psi'[i] = \psi[i]$
 \end{itemize}
 
 The top-level state transition function has an additional validity constraint: for the block to be valid, the areas of all collation headers included must be disjoint from each other. The underlying consensus algorithm will keep track of blocks, where each block contains a number of collation headers, and we will refer to the blockchain produced by the underlying consensus algorithm as the \emph{header chain}.
@@ -482,7 +502,7 @@ $D$, $AP$, and $AN$ are produced correctly.
 
 In short, the validators validate that the transactions are actually valid. In practice, the way that they will do this is through one of two strategies. First, they may receive the collation directly from the entity that produced the collation, and the Merkle branch set $D$ gives them the specific information that they need from the observed and affected subspaces to re-compute the state transition function and ensure that the final subspace roots are correct. Second, they may receive the collation header, and download information from the distributed hash table on the fly.
 
-Now, we will prove that our homomorphism is actually a homomorphism - ie. that $H$ is valid in the context of $\psi$ only if $T$ is valid in the context of $\sigma$, and that the final state $\psi + H$ is equal to $\{i: R((\sigma + T)[i])\}$ (ie. a correct compact representation of the final state) with extremely high probability as long as a Byzantine fault tolerance guarantee is satisfied: less than one third of the weight of validators is Byzantine. 
+Now, we will prove that our homomorphism is actually a homomorphism - \ie that $H$ is valid in the context of $\psi$ only if $T$ is valid in the context of $\sigma$, and that the final state $\psi + H$ is equal to $\{i: R((\sigma + T)[i])\}$ (\ie a correct compact representation of the final state) with extremely high probability as long as a Byzantine fault tolerance guarantee is satisfied: less than one third of the weight of validators is Byzantine. 
 
 \begin{lem}
 Assuming less than $\frac{1}{3}$ of the weight of validators is Byzantine, a block that is valid under the above top-level state transition function will produce a top-level state $\psi'$ such that if we define $\sigma'$ with $\sigma' = \{i: R^{-1}(\psi'[i])\}$, $\sigma' = \sigma + T_1 + T_2 + ...$ where $T_i$ is the set of transactions in $H_i$ where $H_i$ is the collation header root corresponding to the collation containing transaction list $T_i$.
@@ -499,12 +519,12 @@ Hence, we know that the resulting $\psi'$ will represent a state which is \emph{
 Because a sampling scheme is inherently probabilistic, it is theoretically prone to failure, and so we will precisely calculate the probability that the protocol will fail. Assuming a 96-bit security margin, we can consider a probability negligible if the average time between failures is longer than the time it takes for an attacker to make $2^{96}$ computations. If we assume that the cryptoeconomically secure entropy source updates every super-block, and a super-block comes every 20 seconds, then one can reasonably expect a hostile computing cluster to be able to perform $2^{48}$ work within that time, so we will target a failure probability of $2^{-48}$ (this implies roughly one failure per 445979 years of being under attack). We can determine the failure probability with the binomial distribution formula:
 \\
 \\
-$PE(n, k, p) = p^k * (1-p)^{n-k} * \frac{n!}{k!(n-k)!}$
+$\PE(n, k, p) = p^k * (1-p)^{n-k} * \frac{n!}{k!(n-k)!}$
 \\
 \\
-Where $PE(n, k, p)$ is the probability of an event that occurs with probability $p$ in an attempt will achieve exactly $k$ occurrences out of $n$ attempts. For convenience, we define $PGE(n, k, p) = \sum_{i=k}^n PE(n, i, p)$, ie. the probability of \emph{at least} k occurrences.
+Where $\PE(n, k, p)$ is the probability of an event that occurs with probability $p$ in an attempt will achieve exactly $k$ occurrences out of $n$ attempts. For convenience, we define $\PGE(n, k, p) = \sum_{i=k}^n \PE(n, i, p)$, \ie the probability of \emph{at least} k occurrences.
 
-We note that $PGE(135, 90, \frac{1}{3}) = 2^{-48.37}$, so 135 nodes will suffice for a $k = \frac{1}{3}$ fault tolerance. If we are willing to lower to $k = \frac{1}{5}$, then $PGE(39, 31, \frac{1}{5}) = 2^{-48.58}$, so 39 nodes will be sufficient. Additionally, note that if we want greater efficiency under normal circumstances, then a bimodal scheme where either 44 out of a particular 50 nodes ($PGE(50, 44, \frac{1}{3}) = 2^{-49.22}$) or 90 out of a particular 135 nodes is a sufficient validity condition will allow the cheaper but equally safe condition to work in the (usual) case where there are almost no malicious nodes, nearly everyone is online and the network is not under attack, and fall back to the more robust but bulkier validation rule under tougher conditions.
+We note that $\PGE(135, 90, \frac{1}{3}) = 2^{-48.37}$, so 135 nodes will suffice for a $k = \frac{1}{3}$ fault tolerance. If we are willing to lower to $k = \frac{1}{5}$, then $\PGE(39, 31, \frac{1}{5}) = 2^{-48.58}$, so 39 nodes will be sufficient. Additionally, note that if we want greater efficiency under normal circumstances, then a bimodal scheme where either 44 out of a particular 50 nodes ($\PGE(50, 44, \frac{1}{3}) = 2^{-49.22}$) or 90 out of a particular 135 nodes is a sufficient validity condition will allow the cheaper but equally safe condition to work in the (usual) case where there are almost no malicious nodes, nearly everyone is online and the network is not under attack, and fall back to the more robust but bulkier validation rule under tougher conditions.
 
 Additionally, note that the combinatoric formula is only valid if the entropy used to determine validator sets is \emph{actually} random, or at least close enough for our purposes. For this, our second uninfluenceability criterion, stipulating that an attacker with less than $\frac{1}{3}$ of all validators will be able to influence it by at most a reasonably small linear amount (in the NXT case, by a factor of $\frac{3}{2}$), is crucial, showing that with such a powerful attacker the probability of a successful attack remains below $2^{-47.4}$. The first uninfluenceability criterion is important in order to avoid excessive superlinear returns resulting from super-block proposers manipulating the entropy in order to increase the chance that their validators will be involved in verifying blocks, but does not affect security.
 
@@ -530,7 +550,7 @@ Transactions can pay transaction fees to the producer of the block that includes
 \item
 Blocks can pay transaction fees to the proposer of the super-block that includes them, as well as the the validators that will sign off on them.
 \item
-The proposer of the super-block can pay transaction fees to the validator pool of the super-block; this fee can be mandatory (ie. protocol-enforced) or enforced by validators refusing to sign a block with a fee that is too small for them.
+The proposer of the super-block can pay transaction fees to the validator pool of the super-block; this fee can be mandatory (\ie protocol-enforced) or enforced by validators refusing to sign a block with a fee that is too small for them.
 \item
 The protocol may optionally add a mandatory fee to transactions and blocks, and this fee can get destroyed. The protocol may also add an \emph{ex nihilo} reward to the validators of the super-block in place of requiring it to be paid from transaction fees.
 \end{itemize}
@@ -560,7 +580,7 @@ If a collation is unchallenged for $F_d$ blocks, then it is considered ``finaliz
 \item
 If a collation is challenged, then it is placed in ``purgatory''. If it remains in purgatory for $P_d$ blocks, then the collation is reverted (we will determine the precise mechanics of reversion in a later section), and the challenger receives the security deposits of the original $m$ validators of the collation as well as any redeemers (see below).
 \item
-If a collation is challenged, then a larger randomly selected set of $2 * m$ validators must attest to the validity of the collation in order to ``redeem'' it. Challengers can optionally pay a higher cost $k * c_c$ in order to make the set even larger, $2 * k * m$, right up to a maximum of the entire set of $n_v$ validators.
+If a collation is challenged, then a larger randomly selected set of $2 * m$ validators must attest to the validity of the collation in order to ``redeem'' it. Challengers can optionally pay a higher cost $k * c_c$ in order to make the required redemption set even larger, $2 * k * m$, right up to a maximum of the entire set of $n_v$ validators.
 \item
 Participating in a redemption has some very small economic reward (note that only a small reward is required, because a validator can know for sure that they are redeeming a valid and available collation, and that they will be able to convince others of this, by simply downloading it themselves).
 \item
@@ -569,7 +589,7 @@ If a collation is redeemed, then the $F_d$ period begins again, and the collatio
 When all $n_v$ validators are checking the collation, we incentivize honesty by either using a decentralized oracle scheme, or by asking the \emph{top-level consensus process} to adjudicate: if a block contains a pool of $n_v$ validators attesting to a collation that is invalid, then we add a top-level rule saying that that block should be considered invalid.
 \end{itemize}
 
-The chief difficulty in providing economic security is that there are in fact two ways in which a collation can be invalid. The first is that a collation is produced and broadcasted normally, but the block either includes an invalid transcation or has an invalid final state root. In this case, the problem is easy; in fact, we can prove that under the above mechanism acting honestly is a subgame-perfect equilibrium. The second, and more difficult, kind of validity centers around data unavailability. An attacker may simply create a (valid or invalid) collation, publish the header, but refuse to publish the contents, making it impossible for the network to learn the complete final state.
+The chief difficulty in providing economic security is that there are in fact two ways in which a collation can be invalid. The first is that a collation is produced and broadcasted normally, but the block either includes an invalid transaction or has an invalid final state root. In this case, the problem is easy; in fact, we can prove that under the above mechanism acting honestly is a subgame-perfect equilibrium. The second, and more difficult, kind of validity centers around data unavailability. An attacker may simply create a (valid or invalid) collation, publish the header, but refuse to publish the contents, making it impossible for the network to learn the complete final state.
 
 The problem here is this: whereas in the case of invalid collations, the validity or invalidity of a collation is fixed and cannot change, in the case of unavailable data that is not the case. An attacker can always create an unavailable collation, wait for challengers to challenge, and then publish the data and start the redemption process, costing the challengers money. The attacker may do this again and again, draining challengers' resources, until eventually challengers no longer find it economically rational to challenge bad collations, giving the attacker free rein to push through invalid collations; we call this the \emph{crying wolf attack}.
 
@@ -586,7 +606,7 @@ An attacker creates a block with transactions $T_1$ ... $T_n$, where $T_1$ ... $
 \end{exmp}
 
 \begin{note}
-One way to try to solve both attacks above is to require every valid transaction to show a valid ``source'' of its income. However, this leads to a recursive buck-passing problem: what if the attacker performs a sudden millionaire attack to create a new unexplained account $A_1$, then creates a block with an unavailable transaction sending funds from $A_1$ to $A_2$ (possibly a set of multiple accounts), then $A_3$, and so forth until finally collecting the funds at $A_n$, and then finally reveals all transactions upon receiving $A_n$. The total dependency tree of a transaction may well have total size $\omega(N)$. Peter Todd's tree-chains discussion offers the solution\cite{treechains} of limiting the protocol to handling a fixed number (possibly more than $\O(N)$) of ``coins'', each one with a linear history; however, this solution is not sufficiently generalizeable and abstract for our purposes and carries high constant-factor overhead.
+One way to try to solve both attacks above is to require every valid transaction to show a valid ``source'' of its income. However, this leads to a recursive buck-passing problem: what if the attacker performs a sudden millionaire attack to create a new unexplained account $A_1$, then creates a block with an unavailable transaction sending funds from $A_1$ to $A_2$ (possibly a set of multiple accounts), then $A_3$, and so forth until finally collecting the funds at $A_n$, and then finally reveals all transactions upon receiving $A_n$. The total dependency tree of a transaction may well have total size $\omega(N)$. Peter Todd's tree-chains discussion offers the solution\cite{treechains} of limiting the protocol to handling a fixed number (possibly more than $O(N)$) of ``coins'', each one with a linear history; however, this solution is not sufficiently generalizeable and abstract for our purposes and carries high constant-factor overhead.
 \end{note}
 
 \begin{exmp}[Transaction denial attack]
@@ -613,7 +633,7 @@ If $N > \frac{D * m}{c_c}$, however, then the situation is different, and the cr
 
 We can model the problem as a kind of law-and-economics problem: the ``crime'' is creating invalid collations, the ``police officers'' are challengers, and our job is to incentivize enough law enforcement activity to ensure that no crimes gets through uncaught. We will show two strategies for doing this, one roughly corresponding to ``private enforcement'', where individuals are motivated to participate by ``privatizing the loss'' of a successful collation getting through among a specific set of individuals, and the other roughly corresponding to ``public enforcement'', where a central common pool of funds is used to pay challengers, making the payments via a kind of lottery to minimize the amount of work required to make sure that challengers are doing their jobs.
 
-We also make the assumption that, when a challenge is made against a genuinely unavailable collation, and the challenge is at such a level that the entire set of validators is required to participate in redeeming it, there is some fixed probability $p$ such that the validators will check for the collation's availability and conclude that it is unavailable even before the attacker can publish it. We can assume a small $p$, eg. $p \approx 0.001$; decreasing our estimate of $p$ simply makes the network linearly more vulnerable to denial-of-service attacks.
+We also make the assumption that, when a challenge is made against a genuinely unavailable collation, and the challenge is at such a level that the entire set of validators is required to participate in redeeming it, there is some fixed probability $p$ such that the validators will check for the collation's availability and conclude that it is unavailable even before the attacker can publish it. We can assume a small $p$, \eg $p \approx 0.001$; decreasing our estimate of $p$ simply makes the network linearly more vulnerable to denial-of-service attacks.
 
 The private enforcement strategy works as follows. First, we withhold the reward for making a block (\emph{proposing} in Tendermint, \emph{mining} in Bitcoin, etc) for $F_d$ blocks, and keep it as a temporary deposit. Suppose that a collation is unavailable, and does not get challenged for $\frac{F_d}{2}$ blocks. Then, a challenger has the ability to place a challenge at cost $c_c * \frac{n_v}{m * 2}$ in order to require redemption by all validators. If the challenge succeeds, then the challenger receives the rewards of all block makers between the time of the block's creation and the block that includes the challenge.
 
@@ -633,11 +653,11 @@ A critical mechanism used in the previous sections is the concept of \emph{rever
 
 \begin{itemize}
 \item
-$GDC(\psi, \psi_0, H_0) = \emptyset$ if $\psi$ is an ancestor of $\psi_0$ (ie. the dependency cone is empty before the errant collation header)
+$GDC(\psi, \psi_0, H_0) = \emptyset$ if $\psi$ is an ancestor of $\psi_0$ (\ie the dependency cone is empty before the errant collation header)
 \item
-$GDC(\psi, \psi_0, H_0) = OBSERVED(\psi_0, H_0)$ if $\psi = \psi_0$ (ie. immediately after the errant collation header, the dependency cone is simply the area of the errant collation)
+$GDC(\psi, \psi_0, H_0) = \AREA(\psi_0, H_0)$ if $\psi = \psi_0$ (\ie immediately after the errant collation header, the dependency cone is simply the area of the errant collation)
 \item
-$GDC(\psi + \beta, \psi_0, H_0) = \bigcup_{H \in S} OBSERVED(\psi, H) \cup GDC(\psi, \psi_0, H_0)$, where $S$ is the set of all collation headers $H$ such that $OBSERVED(\psi, H)$ and $GDC(\psi, \psi_0, H_0)$ have a nonzero intersection (ie. the dependency cone includes the parent block's dependency cone, plus the full area of all blocks whose area has any intersection at all with the dependency cone of the previous block)
+$GDC(\psi + \beta, \psi_0, H_0) = \bigcup_{H \in S} \AREA(\psi, H) \cup GDC(\psi, \psi_0, H_0)$, where $S$ is the set of all collation headers $H$ such that $\AREA(\psi, H)$ and $GDC(\psi, \psi_0, H_0)$ have a nonzero intersection (\ie the dependency cone includes the parent block's dependency cone, plus the full area of all blocks whose area has any intersection at all with the dependency cone of the previous block)
 \end{itemize}
 
 When an invalid collation $H$'s purgatory period expires and $H$ must be reverted, we compute its dependency cone, and revert every subspace to the value that it had \emph{just before it entered the dependency cone}.
@@ -670,7 +690,7 @@ And if we revert later, the state will be moved to the red line here:
 Notice that one can apply the set of still-valid blocks sequentially to $\sigma$ to obtain $\sigma'_f$ in all cases.
 \end{proof}
 
-It is important to note that the revert process is scalable only if the number of subspaces that an attacker can revert with a single invalid block is bounded, assuming some bound on the amount of time that it takes for the bad block to be detected and for the revert to be included. Otherwise, the attacker can annoy all users by paying less than $b * L$ cost, and so the algorithm will no longer be scalable under attack. In order to achieve this, we have two solutions. First, we can specify that each block can have a maximum area size $k$ for some fixed $k$. The other approach is to require blocks with area larger than $k$ subspaces to have proportionately more validators; eg. a block with area of size $4k$ subspaces should require $\frac{8m}{3}$ signatures out of a pool of $4m$ in order to be valid. Both strategies ensure scalability under attack.
+It is important to note that the revert process is scalable only if the number of subspaces that an attacker can revert with a single invalid block is bounded, assuming some bound on the amount of time that it takes for the bad block to be detected and for the revert to be included. Otherwise, the attacker can annoy all users by paying less than $b * L$ cost, and so the algorithm will no longer be scalable under attack. In order to achieve this, we have two solutions. First, we can specify that each block can have a maximum area size $k$ for some fixed $k$. The other approach is to require blocks with area larger than $k$ subspaces to have proportionately more validators; \eg a block with area of size $4k$ subspaces should require $\frac{8m}{3}$ signatures out of a pool of $4m$ in order to be valid. Both strategies ensure scalability under attack.
 
 \section{Stacking}
 
@@ -713,7 +733,7 @@ Allow users to set the location of objects in the state with arbitrary fineness,
 
 \section{Further optimizations}
 
-The algorithms described above are meant to be starting points, and are by no means optimal. The primary areas of optimization are likely to be fourfold:
+The algorithms described above are meant to be starting points, and are by no means optimal. The primary areas of optimization are likely to be fivefold:
 
 \begin{itemize}
 \item
@@ -723,16 +743,16 @@ Achieving constant-factor gains by increasing efficiency of Merkle proofs, block
 \item
 Increasing block speed
 \item
-Making reverts less harmful by using inclusive blockchain protocols (ie. if $\beta_1 ... \beta_n$ is the set of blocks that was reverted, and $\sigma'_f$ is the post-revert state, automatically update to $\sigma''_f$ = $\sigma'_f {++} \beta_1 {++} ... {++} \beta_n$).
+Making reverts less harmful by using inclusive blockchain protocols (\ie if $\beta_1 ... \beta_n$ is the set of blocks that was reverted, and $\sigma'_f$ is the post-revert state, automatically update to $\sigma''_f$ = $\sigma'_f {++} \beta_1 {++} ... {++} \beta_n$).
 \item
-Providing the option for even higher gains of efficiency but at the cost of less-than-perfect guarantees of atomicity, ie. reducing $m$ to $8$ with the associated cost gains but with the understanding that the action happens within a cordoned-off area of the state where invalid transitions will sometimes happen.
+Providing the option for even higher gains of efficiency but at the cost of less-than-perfect guarantees of atomicity, \ie reducing $m$ to $8$ with the associated cost gains but with the understanding that the action happens within a cordoned-off area of the state where invalid transitions will sometimes happen.
 \end{itemize}
 
-For the first of these, the most promising direction where one can find easy immediate gains is to try to separate observed area from affected area. Theoretically, there is no interference risk if two collations in a block share observed areas, as long as that observed area is not any collation's affected area. The challenge is (i) figuring out what hard limits to impose on a collation in order to make sure that the scheme remains scalable (eg. if there are $\frac{n}{2}$ blocks each using $\{\frac{n}{2}+i\}$ as their observed area and $[\frac{n}{2}]$ as their observed area, the super-block will have $\frac{n^2}{4}$ hashes and will thus be unscalable), and (ii) figuring out how to manage reverts.
+For the first of these, the most promising direction where one can find easy immediate gains is to try to separate observed area from affected area. Theoretically, there is no interference risk if two collations in a block share observed areas, as long as that observed area is not any collation's affected area. The challenge is (i) figuring out what hard limits to impose on a collation in order to make sure that the scheme remains scalable (\eg if there are $\frac{n}{2}$ blocks each using $\{\frac{n}{2}+i\}$ as their observed area and $[\frac{n}{2}]$ as their observed area, the super-block will have $\frac{n^2}{4}$ hashes and will thus be unscalable), and (ii) figuring out how to manage reverts.
 
 If one wants to go even further, one can allow the affected area of one collation to be the observed area of another collation, as long as one can arrange all collations in an order such that each collation is observed before it is affected. But there is a fundamental tradeoff between expressivity and fragility: the more the state transition function is able to process synchronous updates of very many and arbitrary states, the more costly a successful attack becomes if it must be reverted.
 
-For the second, the largest tradeoff is likely to be that between churn and security. If one can keep the same $m$ nodes validating the same subspaces for a longer period of time, eg. half an hour, one may be able to reduce network load. Collators may even find it worth their while to download the entire upper half or two thirds of the Merkle tree for the subspaces into which they are sorted, allowing for 2x or 3x savings in the data that needs to be transmitted at the cost of $O(N^{0.5})$ or $O(N^{0.67})$ additional bandwidth per half hour (eg. assuming a subspace is 1 GB, either 32 KB or 1 MB per half hour, respectively). However, keeping a constant pool for too long makes the scheme more attackable.
+For the second, the largest tradeoff is likely to be that between churn and security. If one can keep the same $m$ nodes validating the same subspaces for a longer period of time, \eg half an hour, one may be able to reduce network load. Collators may even find it worth their while to download the entire upper half or two thirds of the Merkle tree for the subspaces into which they are sorted, allowing for 2x or 3x savings in the data that needs to be transmitted at the cost of $O(N^{0.5})$ or $O(N^{0.67})$ additional bandwidth per half hour (\eg assuming a subspace is 1 GB, either 32 KB or 1 MB per half hour, respectively). However, keeping a constant pool for too long makes the scheme more attackable.
 
 For the third, the most likely source of gains will be a combination of two factors. First, the underlying non-scalable consensus algorithm can be sped up, using inclusive blockchain protocols such as those developed by Sompolinsky and Zohar\cite{inclusive} or proof-of-stake-based alternatives. Second, we can amend the top-level validity rule to say that collations do not need signatures in order to enter the header chain; however, in order for a state root to be considered finalized it must be signed and the signature must enter the header chain after the fact. This allows collations to be ``partially confirmed'' and even allows collations to be built on top of partially confirmed collations, as long as everything is fully confirmed eventually. Efficiency in such a scheme can be increased further, as a single validator signature can be used to attest to multiple collations by using an identifier.
 
@@ -746,7 +766,7 @@ Using the reference-by-state-root homomorphism scheme described here, we can cre
 
 The scheme makes minimal compromises to security, scalability or interoperability, except for making the compromise that state transitions must be localized to a small area with a high degree of correlation between the subspaces that are modified together. In those cases where rare combinations of subspaces must be modified by one transaction, we offer the second-best alternative of asynchronicity via a hypercube-style relay network. Although one may criticize the solution for adding a higher amount of complexity at the bottom layer, we argue that this brings a tradeoff of significantly reducing complexity for application developers, who are exposed to an interface almost unchanged from non-scalable blockchains; developers have no additional need to think about cryptoeconomic security margins, trusted parties or rigging up application-specific revert procedures to ensure cross-chain atomic transactions. We hope that the higher throughput and lower transaction fees that will result from our designs can form the basis for a next wave of blockchain adoption.
 
-\begin{thebibliography}{39}
+\begin{thebibliography}{34}
 
 \bibitem{mmpetertodd}
     Peter Todd on merge-mining, Dec 2013: \url{http://sourceforge.net/p/bitcoin/mailman/message/31796158/}
@@ -801,12 +821,6 @@ The scheme makes minimal compromises to security, scalability or interoperabilit
 
 \bibitem{ipfs}
     IPDS: \url{http://ipfs.io/}
-
-\bibitem{zamfirpoc}
-    Vlad Zamfir and Pavel Kravchenko's Proof of Custody: \url{https://docs.google.com/document/d/1F81ulKEZFPIGNEVRsx0H1gl2YRtf0mUMsX011BzSjnY/edit}
-
-\bibitem{ffterasurecode}
-    $O(N*polylog(N))$ Reed-solomon erasure codes via fast Fourier transforms: \url{http://arxiv.org/pdf/0907.1788.pdf}
 
 \bibitem{nxtinside}
     nxtinside.org, describing the NXT generation signature algorithm: \url{http://nxtinside.org/inside-a-proof-of-stake-cryptocurrency-2/}

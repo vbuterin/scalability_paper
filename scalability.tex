@@ -44,7 +44,7 @@
 \begin{document}
 
 
-\title{Notes on Scalable Blockchain Protocols (version 0.3)}
+\title{Notes on Scalable Blockchain Protocols (version 0.3.1)}
 \date{April 14-31, 2015}
 \author{Vitalik Buterin (Ethereum) \\  \\ Reviewers and collaborators: Gavin Wood, Vlad Zamfir (Ethereum), \\ Jeff Coleman (Kryptokit)}
 
@@ -60,11 +60,11 @@ Currently, all blockchain consensus protocols that are actively in use have an i
 
 What might perhaps seem like a natural solution, splitting the relevant data over a thousand blockchains, has the two fundamental problems that it (i) decreases security, to the point where the security of \emph{each individual blockchain} on average does not grow \emph{at all} as total usage \emph{of the ecosystem} increases, and (ii) massively reduces the potential for interoperability.
 
-There are techniques, such that the practice of having proof-of-work miners mine multiple blockchains simultaneously (``merge-mining''), that seem to have stronger security, but in practice they end up offering at best a linear tradeoff between the thousand-chains and single-chain extreme: if each chain is mined by only one in a thousand miners, then it is vulnerable to very cheap attacks\cite{mmpetertodd} (and indeed, such attacks have been succesfully carried out in real life\cite{coiledcoin}), and if each chain is mined by every miner then every consensus participant must process every transaction anyway and so we have not made any progress in scalability. Techniques involving ``checkpointing'' a smaller blockchain inside a larger one also fail to provide security, as they do not prevent an attacker with majority participation in the smaller consensus from creating a checkpoint of fake or unavailable data.\cite{factompetertodd}
+There are techniques, such that the practice of having proof-of-work miners mine multiple blockchains simultaneously (``merge-mining''), that seem to have stronger security, but in practice they end up offering at best a linear tradeoff between the thousand-chains and single-chain extreme: if each chain is mined by only one in a thousand miners, then it is vulnerable to very cheap attacks\cite{mmpetertodd} (and indeed, such attacks have been succesfully carried out in real life\cite{coiledcoin}), and if each chain is mined by every miner then every consensus participant must process every transaction anyway and so we have not made any progress in scalability. Techniques involving ``checkpointing'' a smaller blockchain inside a larger one also fail to provide security, as they do not prevent an attacker with majority participation in the smaller blockchain's consensus process from creating a checkpoint of fake or unavailable data.\cite{factompetertodd}
 
 The problem of simulatenously achieving the best of both worlds: having only a small portion of consensus participants \emph{explicitly} participate in validating each transaction, but have the entire weight of the network \emph{implicitly} stand behind each one, has proven surprisingly hard.
 
-There are several reasons why this is the case. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes now necessarily need to employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire "state", and must therefore be a "light client", downloading only a small amount of header data and not performing full verification checks, everywhere else. However, even still that node's economic resources must somehow be involved in ``attesting'' to the security of all transactions, including those that it does not even know about.
+There are several reasons why this is the case. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes must now necessarily employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire "state", and must therefore be a "light client", downloading only a small amount of header data and not performing full verification checks, everywhere else. However, even still that node's economic resources must somehow be involved in ``attesting'' to the security of all transactions, including those that it does not even know about.
 
 Second, we need to be concerned not only with validity but also with data availability; it is entirely possible for a block to appear that looks valid, and is valid, but for which the auxiliary data is unavailable, leading to a situation where no other validator can effectively validate transactions or produce new blocks since the necessary data is unavailable to them. Finally, transactions must necessarily be processed by different nodes in parallel, and given that it is not possible to parallelize arbitrary computation \cite{parallelcomputing}, we must determine the set of restrictions to a state transition function that will best balance parallelizability and utility.
 
@@ -72,7 +72,7 @@ This paper proposes another strategy for achieving scalability, as well as some 
 
 Theoretically, under a Byzantine-fault-tolerant model of security, fallback is unnecessary; sampling only is sufficient. However, if we are operating in an anonymous-validator environment, then it is also considered desirable to have a hard economic guarantee of the minimum quantity of funds that needs to be destroyed in order to cause a certain level of damage to the network; in that case, in order to make the economic argument work we use fallback as a sort of incentivizer-of-last-resort, making cooperation the only subgame-perfect equilibrium.
 
-The particular advantage that our designs provide is a very high degree of generalization and abstraction. Although schemes using technologies like auditable computation through Merkle-tree computation traces\cite{versum} and micropayment channels\cite{lightning} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs can be used to provide scalability for any underlying state transition function, provided that most state changes have a ``localized'' impact. Our designs are also meant to be consensus-neutral, working equally well with proof of work, Tendermint-style\cite{tendermint} proof of stake, and even social-network consensus algorithms such the Stellar Consensus Protocol\cite{stellar} and Houwu Chen's simulated annealing algorithm\cite{chenhouwu}. Generality is achieved by splitting consensus into two-levels, where the top-level consensus participants implement a state transition function that deals with root hashes of portions of the state and collation headers, while the bottom-level activity is involved in actually checking the validity of the underlying transactions.
+The particular advantage that our designs provide is a very high degree of generalization and abstraction. Although schemes using technologies like auditable computation through Merkle-tree computation traces\cite{versum} and micropayment channels\cite{lightning} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs can be used to provide scalability for any underlying state transition function, provided that most state changes have a ``localized'' impact. Our designs are also meant to be consensus-neutral, working equally well with proof of work, Tendermint-style\cite{tendermint} proof of stake, and even social-network consensus algorithms such the Stellar Consensus Protocol\cite{stellar} and Houwu Chen's simulated annealing algorithm\cite{chenhouwu}. Generality is achieved by splitting consensus into two levels, where the top-level consensus participants implement a state transition function that deals with root hashes of portions of the state and collation headers, while the bottom-level activity is involved in actually checking the validity of the underlying transactions.
 
 Our basic designs allow for a network consisting solely of nodes bounded by $O(N)$ computational power to process a transaction load of $O(N^{2-\epsilon})$ (we generally use $O(N^\epsilon)$ to denote polylogarithmic terms for simplicity), under both Byzantine-fault-tolerant and economic security models; we then also propose an experimental ``stacking'' strategy for achieving arbitrary scalability guarantees up to a maximum of $O(exp(N/k))$ transactional load, although we recommend that for simplicity implementers attempt to perfect the $O(N^{2-\epsilon})$ designs first.
 
@@ -89,27 +89,27 @@ A \emph{transaction} is a piece of data representing an operation that a particu
 \end{defn}
 
 \begin{defn}[State Transition Function]
-A \emph{state transition function} is a function $\APPLY(\sigma, \tau) \rightarrow \sigma' \cup \{\varnothing\}$, where $\sigma$ and $\sigma'$ are states and $\tau$ is a transaction. If $\APPLY(\sigma, \tau) = \varnothing$, we consider $\tau$ \emph{invalid in the context of $\sigma$}.
+A \emph{state transition function} is a function $\APPLY(\sigma, \tau) \rightarrow \sigma'$, which takes as input a ``prior state'' (or ``pre-state'') $\sigma$ and a transaction $\tau$ and outputs the ``post-state'' $\sigma'$. If $\tau$ is ``invalid'' in the context of $\sigma$ in the intuitive sense (eg. $\sigma$ has account $A$ having a zero currency balabce and $\tau$ tries to send twenty currency units from $A$ to $B$), we conventionally say that $\sigma' = \varnothing$. We require that $\APPLY(\varnothing, \tau) = \varnothing$ for any $\tau$.
 \end{defn}
 
 For simplicity, we will use the following notation throughout:
 
 \begin{itemize}
 \item
-$\APPLY(\sigma, \tau) \rightarrow \sigma'$ becomes $\sigma + \tau = \sigma'$
+$\APPLY(\sigma, \tau) = \sigma'$ becomes $\sigma + \tau = \sigma'$
 \item  
 Given an ordered list $T = [\tau_1, \tau_2, \tau_3...]$ and a state $\sigma$, we define $\sigma + T = \sigma + \tau_1 + \tau_2 + ...$
 \item
 $T = [\tau_1, \tau_2, \tau_3 ...]$ is \emph{valid in the context of $\sigma$} if $\tau_1$ is valid in the context of $\sigma$, $\tau_2$ is valid in the context of $\sigma + \tau_1$, $\tau_3$ is valid in the context of $\sigma + \tau_1 + \tau_2$, etc.
 \item
-$[n]$ is the set $\{1, 2, 3..... n\}$
+$[n]$ is the set $\{1, 2, 3..... n\}$, as is standard in combinatorics.
 \end{itemize}
 
 We can describe a simplified Bitcoin-like cryptocurrency as follows:
 
 \begin{itemize}
 \item
-The \emph{state} consists of a set of account balances, mapping $\{pubkey: bal\}$ where $pubkey$ is the public key of a user and $bal$ is a number equal to or greater than zero.
+The \emph{state} consists of a mapping $\mathcal{P} \rightarrow [0, \infty)$, where $\mathcal{P}$ is a set of public keys of users and the values are balances.
 \item
 A \emph{transaction} is a tuple $\tau = (from, to, value, sig)$, where $from$ is the sender public key, $to$ is the destination public key, $value$ is the amount that the transaction is sending and $sig$ is a cryptographic signature.
 \item
@@ -120,7 +120,7 @@ A transaction $\tau = (from, to, value, sig)$ is valid in the context of a state
     \item
     $value \ge 0$
     \item
-    $V(from, sig) = 1$ (\ie the signature is valid when verified against the sender public key, so you can't spend an account's money unless you have the corresponding private key)
+    $V(from, sig) = 1$ for some cryptographic verification function $V$ (\ie the signature is valid when verified against the sender public key, so you can't spend an account's money unless you have the corresponding private key)
     \end{itemize}
 If $\tau$ is invalid, then $\sigma + \tau = \varnothing$. If $\tau$ is valid, then $\sigma + \tau$ is identical to $\sigma$ except:
     \begin{itemize}
@@ -131,7 +131,7 @@ If $\tau$ is invalid, then $\sigma + \tau = \varnothing$. If $\tau$ is valid, th
     \end{itemize}
 \end{itemize}
 
-In reality, Bitcoin is somewhat more complicated, using a concept of \emph{unspent transaction outputs} to record the ownership of funds instead of a direct $\{pubkey: bal\}$ mapping, but the above example illustrates the basic principle.
+In reality, Bitcoin is somewhat more complicated, using a concept of \emph{unspent transaction outputs} to record the ownership of funds instead of a direct mapping of public keys to balances, but the above example illustrates the basic principle.
 
 \begin{defn}[Block]
 A \emph{block} $\beta$ is a package containing a list of transactions $T$, a reference to a \emph{parent block} (in more exotic protocols, blocks with multiple parents are sometimes found, but usually blocks only have one parent), and auxiliary verification data. A block is valid in the context of a state $\sigma$ if:
@@ -141,7 +141,7 @@ The block's transaction list is valid in the context of $\sigma$
 \item
 Some other conditions, generally determined by the consensus algorithm, are met.
 \end{itemize}
-If a block is valid, we define the block-level state transition function with $\sigma + \beta = \sigma + T$ where $T$ is the transaction list in $\beta$. Note that the consensus algorithm will sometimes specify operations that are illegal in normal transactions; for example, Bitcoin specifies that the first transaction in a block can include an \emph{ex nihilo} reward of 25 BTC to the producer of that block, and Ethereum performs a similar operation at the end; although in Ethereum's case the rewarding step is performed directly by the protocol and not by an actual transaction, we can still consider it a kind of ``virtual transaction'' for our purposes.
+If a block is valid, we define the block-level state transition function with $\sigma + \beta = \sigma + T$ (ie. $\sigma + \tau_1 + \tau_2 + ... + \tau_n$) where $T = [\tau_1, \tau_2 ... \tau_n]$ is the transaction list in $\beta$. If a block is invalid, then we once again conventionally specify $\sigma + \beta = \varnothing$. Note that the consensus algorithm will sometimes specify operations that are illegal in normal transactions; for example, Bitcoin specifies that the first transaction in a block can include an \emph{ex nihilo} reward of 25 BTC to the producer of that block, and Ethereum performs a similar operation at the end; although in Ethereum's case the rewarding step is performed directly by the protocol and not by an actual transaction, we can still consider it a kind of ``virtual transaction'' for our purposes.
 \end{defn}
 
 \begin{defn}[Blockchain]
@@ -181,7 +181,7 @@ Note that in this case, the updating process and the block validity conditions a
 A \emph{weight function} is a mapping $U \rightarrow x \in [0,1]$ where $U$ is a user, such that the sum of the weights of all users equals to 1. Essentially, the weight of a user is their ``share of the vote'' in some voting process.
 \end{defn}
 
-In traditional Byzantine fault tolerance literature, guarantees are usually phrased in the form ``this algorithm works unless at least $\frac{1}{3}$ of nodes fail or act incorrectly''; here, we are assuming an open and decentralized protocol so creating a node is trivial, and so our Byzantine fault tolerance guarantees will be phrased in the form ``this algorithm works unless at least \emph{$\frac{1}{3}$ of all weight} fails or acts incorrectly''.
+In traditional Byzantine fault tolerance literature, guarantees are usually phrased in the form ``this algorithm works unless at least $\frac{1}{3}$ of nodes (in this paper we use the word ``node'' interchangeably with ``user'') fail or act incorrectly; here, we are assuming an open and decentralized protocol so creating a node is trivial, and so our Byzantine fault tolerance guarantees will be phrased in the form ``this algorithm works unless at least \emph{$\frac{1}{3}$ of all weight} fails or acts incorrectly''.
 
 We define the emsemble of (i) a block-level state transition function and (ii) a consensus algorithm as \emph{a cryptoeconomic state machine}. A cryptoeconomic state machine can be viewed as a kind of decentralized simulation of a server, maintaining the state of one or more applications and updating it in discrete steps. Desired properties for a cryptoeconomic state machine include:
 
@@ -211,7 +211,7 @@ The goal of this document can be summarized as follows: given a state $\sigma$ a
 Before we get to describing our approach, there are a few more fundamental primitives that we need to describe.
 
 \begin{defn}[Partitioning scheme]
-A \emph{partitioning scheme} is a way of representing a state as a collection of ``subspaces''; formally, we can see it as a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 ... \sigma_n)$ for a fixed $n$. An individual value $\sigma[i]$ will be called a \emph{state subspace}, and a value $i$ will be called a \emph{subspace index}.
+A \emph{partitioning scheme} is a way of representing a state as a collection of ``subspaces''; formally, we can see it as a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 ... \sigma_n)$ for a fixed $n$ (in practice, protocols will need to adjust $n$ to maintain appropriate balance of effort at multiple levels of transaction volume; however we will start off with fixed $n$ to simplify the discussion for expository purposes, and will then discuss mechanisms for adjusting $n$ in a ater section). An individual value $\sigma[i]$ will be called a \emph{state subspace}, and a value $i$ will be called a \emph{subspace index}.
 \end{defn}
 
 We can visually see a partitioning scheme as follows:
@@ -274,11 +274,11 @@ A \emph{root function} is a mapping $R(\sigma) = i \in D$ where $D$ is some doma
 A \emph{Merkle proof protocol} is a scheme consisting of two functions:
 \begin{itemize}
 \item
-$PROVE(\sigma, i) \rightarrow \pi$
+$PROVE(\sigma, i) \rightarrow \pi$, taking as inputs a state $\sigma$ and an index $i$ and providing an output $\pi$, a ``proof'' showing that $\sigma[i]$ is indeed a part of $\sigma$
 \item
-$VERIFY(\rho, i, \pi, V) \rightarrow \{0, 1\}$
+$VERIFY(\rho, i, \pi, V) \rightarrow \{0, 1\}$, taking as input a state root $\rho$, an index $i$, a proof $\pi$ and a candidate value $V$. The function should only return 1 if $\pi$ is a proof showing that $V = \sigma[i]$ for some $\sigma$ such that $R(\sigma) = \rho$.
 \end{itemize}
-$VERIFY$ should only return 1 if $\pi$ is a proof showing that $V = \sigma[i]$ for some $\sigma$ such that $R(\sigma) = \rho$. $PROVE$ and $VERIFY$ should both take logarithmic time.
+$PROVE$ and $VERIFY$ should both take logarithmic time.
 \end{defn}
 
 \begin{defn}[Merkle branch]
@@ -374,7 +374,7 @@ SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a forma
 \end{exmp}
 
 \begin{note}
-There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of Sztorcian counter-coordination\cite{sztorc}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument that Sztorc provides\cite{szcorc2} is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
+There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of Sztorcian counter-coordination\cite{sztorc}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument that Sztorc provides\cite{sztorc2} is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
 
 \begin{center}
 \includegraphics[width=165pt]{schellingcoin_payoff1.png}
@@ -437,9 +437,9 @@ There exists some fixed number $k_u$ such that on average a user is interested i
 \item
 As soon as data makes it into the hands of at least one altruist, it will propagate through the distributed hash table and become available to everyone.
 \item
-The underlying consensus algorithm works, and has all security properties that are desired.
+The underlying top-level consensus algorithm works, and has all security properties that are desired.
 \item
-The underlying consensus prevents censorship of transactions in the long term; \ie there is some period of time $T_c$ within which a transaction will almost certainly be accepted into the network.
+The underlying top-level consensus prevents censorship of transactions in the long term; \ie there is some period of time $T_c$ within which a transaction will almost certainly be accepted into the network.
 \end{itemize}
 
 \section{A Byzantine-fault-tolerant Scalable Consensus Overlay}
@@ -631,15 +631,15 @@ If $N < \frac{D * m}{c_c}$ (where $D$ is the size of a validator deposit, with $
 
 If $N > \frac{D * m}{c_c}$, however, then the situation is different, and the crying wolf attack actually does become the most cost-efficient way of compromising the system. In this case, we need to either concede that, \emph{in extremis}, challenging is an altruistic activity, or find some alternative mechanism of incentivizing challengers.
 
-We can model the problem as a kind of law-and-economics problem: the ``crime'' is creating invalid collations, the ``police officers'' are challengers, and our job is to incentivize enough law enforcement activity to ensure that no crimes gets through uncaught. We will show two strategies for doing this, one roughly corresponding to ``private enforcement'', where individuals are motivated to participate by ``privatizing the loss'' of a successful collation getting through among a specific set of individuals, and the other roughly corresponding to ``public enforcement'', where a central common pool of funds is used to pay challengers, making the payments via a kind of lottery to minimize the amount of work required to make sure that challengers are doing their jobs.
+We can model the situation as a kind of law-and-economics problem: the ``crime'' is creating invalid collations, the ``police officers'' are challengers, and our job is to incentivize enough law enforcement activity to ensure that no crimes gets through uncaught. We will show two strategies for doing this, one roughly corresponding to ``private enforcement'', where individuals are motivated to participate by ``privatizing the loss'' of a successful collation getting through among a specific set of individuals, and the other roughly corresponding to ``public enforcement'', where a central common pool of funds is used to pay challengers, making the payments via a kind of lottery to minimize the amount of work required to make sure that challengers are doing their jobs.
 
 We also make the assumption that, when a challenge is made against a genuinely unavailable collation, and the challenge is at such a level that the entire set of validators is required to participate in redeeming it, there is some fixed probability $p$ such that the validators will check for the collation's availability and conclude that it is unavailable even before the attacker can publish it. We can assume a small $p$, \eg $p \approx 0.001$; decreasing our estimate of $p$ simply makes the network linearly more vulnerable to denial-of-service attacks.
 
-The private enforcement strategy works as follows. First, we withhold the reward for making a block (\emph{proposing} in Tendermint, \emph{mining} in Bitcoin, etc) for $F_d$ blocks, and keep it as a temporary deposit. Suppose that a collation is unavailable, and does not get challenged for $\frac{F_d}{2}$ blocks. Then, a challenger has the ability to place a challenge at cost $c_c * \frac{n_v}{m * 2}$ in order to require redemption by all validators. If the challenge succeeds, then the challenger receives the rewards of all block makers between the time of the block's creation and the block that includes the challenge.
+The private enforcement strategy works as follows. First, we withhold the reward for making a block (\emph{proposing} in Tendermint, \emph{mining} in Bitcoin, etc) for $F_d$ blocks, and keep it as a temporary deposit. Suppose that a collation is unavailable, and does not get challenged for $\frac{F_d}{2}$ blocks. Then, a challenger has the ability to place a challenge at cost $c_c * \frac{n_v}{m * 2}$ in order to require redemption by all validators. If the challenge succeeds, then the challenger receives the rewards (plus, for good measure, a portion of the deposits) of all block makers between the time of the block's creation and the block that includes the challenge.
 
-This has two consequences. First, it increases the reward for a challenger to $\frac{F_d}{2} * R \in O(L)$ (where $R$ is the block reward), meaning that as long as $\frac{c_c * \frac{n_v}{m * 2}}{\frac{F_d}{2} * R} < p$, challenging is rational. The above equation can be re-written as $\frac{c_c * n_v * 2}{F_d * m * R}$, with the constants $F_d$ (we recommend $F_d \approx 40$) and $m$ at the bottom, so the truth of the inequality is quite plausible, particularly with sufficiently small values of $c_c$. Second, it transforms deterrence against bad collations from a public good into a private good - if a bad collation makes it through the first $\frac{F_d}{2}$ blocks, then the next block makers specifically are liable. This creates the incentive for those block makers to subsidize challengers to challenge during previous blocks - perhaps privately using techniques like the random auditing that we will discuss for the public enforcement strategy later.
+This has two consequences. First, it increases the reward for a challenger to $\frac{F_d}{2} * R \in O(L)$ (where $R$ is the block reward), meaning that as long as $\frac{c_c * \frac{n_v}{m * 2}}{\frac{F_d}{2} * R} < p$, challenging is rational. The above equation can be re-written as $\frac{c_c * n_v * 2}{F_d * m * R}$, with the constants $F_d$ (we recommend $F_d \approx 40$) and $m$ (as in the previous section, we recommend $39 \le m \le 135$ depending on parameters) at the bottom, so the truth of the inequality is quite plausible, particularly with sufficiently small values of $c_c$. Second, it transforms deterrence against bad collations from a public good into a private good - if a bad collation makes it through the first $\frac{F_d}{2}$ blocks, then the next block makers specifically are liable. This creates the incentive for those block makers to subsidize challengers to challenge during previous blocks - perhaps privately using techniques like the random auditing that we will discuss for the public enforcement strategy later.
 
-The public enforcement strategy works simply: every block, we use a small amount of proof of work, perhaps with expected per-block cost $w = R * 0.01$, as a source of entropy from which to select a random subspace. We then ask all top-level consensus participants to validate the last collation on that subspace. If that collation is indeed ubavailable, and the block has been challenged, then the challengers split a reward of size $r_c = w * 0.49 \in O(N^{2-\epsilon})$. The block maker also gets a reward of equal size.
+The public enforcement strategy works simply: every block, we use a small amount of proof of work, perhaps with expected per-block cost $w = R * 0.01$, as a source of entropy from which to select a random subspace. We then ask all top-level consensus participants to validate the last collation on that subspace. If that collation is indeed unavailable, and the block has been challenged, then the challengers split a reward of size $r_c = w * 0.49 \in O(N^{2-\epsilon})$. The block maker also gets a reward of equal size.
 
 The scheme can be thought of an inverted application of a standard result from law and economics: one can achieve compliance with arbitrarily low enforcement cost by simply decreasing the level of enforcement, and thus the probability of getting caught, but simultaneously increasing the fine\cite{econofcrime} - except, in our case, we are performing the exact opposite task of a police department as we are trying to \emph{incentivize a virtuous usually-costly action} with the occasional application of a \emph{reward}. The load each validator is at most the cost of downloading one block, $O(N^{1-\epsilon})$, and each subspace will have a propbbility of at least $\frac{1}{O(N^{1-\epsilon})}$ of being randomly inspected; hence the scheme does not compromise scalability. However, assuming that a top-level challenge has at least a fixed probability $p$ of correctly determining that an unavailable block is unavailable before the attacker manages to broadcast it across the network, this provides an average incentive of $\frac{r_c}{O(N^{1-\epsilon})} \in O(N)$ in order to challenge, making it statistically worthwhile to challenge invalid blocks despite the cost.
 
@@ -733,7 +733,7 @@ Allow users to set the location of objects in the state with arbitrary fineness,
 
 \section{Further optimizations}
 
-The algorithms described above are meant to be starting points, and are by no means optimal. The primary areas of optimization are likely to be fivefold:
+The algorithms described above are meant to be starting points, and are by no means optimal. The primary areas of optimization are likely to be the following:
 
 \begin{itemize}
 \item
@@ -746,6 +746,8 @@ Increasing block speed
 Making reverts less harmful by using inclusive blockchain protocols (\ie if $\beta_1 ... \beta_n$ is the set of blocks that was reverted, and $\sigma'_f$ is the post-revert state, automatically update to $\sigma''_f$ = $\sigma'_f {++} \beta_1 {++} ... {++} \beta_n$).
 \item
 Providing the option for even higher gains of efficiency but at the cost of less-than-perfect guarantees of atomicity, \ie reducing $m$ to $8$ with the associated cost gains but with the understanding that the action happens within a cordoned-off area of the state where invalid transitions will sometimes happen.
+\item
+Reducing the number of signature verifications required at the top level (while keeping the number of validators per collation) constant.
 \end{itemize}
 
 For the first of these, the most promising direction where one can find easy immediate gains is to try to separate observed area from affected area. Theoretically, there is no interference risk if two collations in a block share observed areas, as long as that observed area is not any collation's affected area. The challenge is (i) figuring out what hard limits to impose on a collation in order to make sure that the scheme remains scalable (\eg if there are $\frac{n}{2}$ blocks each using $\{\frac{n}{2}+i\}$ as their observed area and $[\frac{n}{2}]$ as their observed area, the super-block will have $\frac{n^2}{4}$ hashes and will thus be unscalable), and (ii) figuring out how to manage reverts.
@@ -757,6 +759,8 @@ For the second, the largest tradeoff is likely to be that between churn and secu
 For the third, the most likely source of gains will be a combination of two factors. First, the underlying non-scalable consensus algorithm can be sped up, using inclusive blockchain protocols such as those developed by Sompolinsky and Zohar\cite{inclusive} or proof-of-stake-based alternatives. Second, we can amend the top-level validity rule to say that collations do not need signatures in order to enter the header chain; however, in order for a state root to be considered finalized it must be signed and the signature must enter the header chain after the fact. This allows collations to be ``partially confirmed'' and even allows collations to be built on top of partially confirmed collations, as long as everything is fully confirmed eventually. Efficiency in such a scheme can be increased further, as a single validator signature can be used to attest to multiple collations by using an identifier.
 
 For the fifth, an ideal goal would be to have a blockchain design which allows users to pick a point on the entire tradeoff space between cost and probability of failure, essentially capturing in the base protocol concepts like ``auditable computation'' \cite{auditable} (where computation is done by a third party by default, but if an auditor finds the third party provided an incorrect result the auditor can force the execution to be re-done on the blockchain and if the third party is indeed in the wrong it loses a security deposit from which the auditor will be able to claim a bounty).
+
+For the sixth, the simplest strategy is to separate \emph{collation inclusion} from \emph{collation verification}. We can do this by allowing collations to enter the header chain unsigned, but first placing them in a special ``pending'' status. Validators can then sign collations on the header chain, and once a collation has been signed enough times it becomes accepted pending challenges and starts counting down the timer until finalization. The benefit here is that a single signature can be used to attest to the validity of multiple collations, by having the validator sign an encoded list of indices of collations that they believe are valid.
 
 Finally, there is plenty of room for optimization in strategies, figuring out how validators can self-organize in order to maximize the expressivity of the state transition function in practice. The ideal goal is to present an interface to developers that ``just works'', providing a set of highly robust abstractions that achieve strong security bounds, freeing developers of the need to think about the underlying architecture, math and economics of the platform unless absolutely necessary. But this problem can be solved much later than the others, and solutions can much more easily continue to be iterated even after the underlying blockchain protocol is developed.
 
@@ -820,7 +824,7 @@ The scheme makes minimal compromises to security, scalability or interoperabilit
     Kademlia: A Peer-to-peer Information System Based on the XOR Metric \url{http://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf}
 
 \bibitem{ipfs}
-    IPDS: \url{http://ipfs.io/}
+    IPFS: \url{http://ipfs.io/}
 
 \bibitem{nxtinside}
     nxtinside.org, describing the NXT generation signature algorithm: \url{http://nxtinside.org/inside-a-proof-of-stake-cryptocurrency-2/}

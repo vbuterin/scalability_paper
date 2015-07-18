@@ -46,7 +46,7 @@
 
 \title{Notes on Scalable Blockchain Protocols (version 0.3.2)}
 \date{April 14 - May 31, 2015}
-\author{Vitalik Buterin (Ethereum) \\  \\ Reviewers and collaborators: Gavin Wood, Vlad Zamfir (Ethereum), \\ Jeff Coleman (Kryptokit), \\ Matthew Wampler-Doty (independent) \\ John Cohn (IBM)}
+\author{Vitalik Buterin (Ethereum) \\  \\ Reviewers and collaborators: Gavin Wood, Vlad Zamfir (Ethereum), \\ Jeff Coleman (Kryptokit), \\ John Cohn (IBM)}
 
 \maketitle
 
@@ -64,13 +64,13 @@ There are techniques, such that the practice of having proof-of-work miners mine
 
 The problem of simulatenously achieving the best of both worlds: having only a small portion of consensus participants \emph{explicitly} participate in validating each transaction, but have the entire weight of the network \emph{implicitly} stand behind each one, has proven surprisingly hard.
 
-There are several reasons why this is the case. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes must now necessarily employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire "state", and must therefore be a "light client", downloading only a small amount of header data and not performing full verification checks, everywhere else - similarly to how existing Bitcoin clients like Electrum\cite{electrum} ensure security without downloading the full blockchain today. However, even still that node's economic resources must somehow be involved in ``attesting'' to the security of all transactions, including those that it does not even know about.
+There are several reasons why this is the case. First, because we lose the guarantee that a node can personally validate every transaction in a block, nodes must now necessarily employ statistical and economic means in order to make sure that other blocks are secure; in essence, every node can only \emph{fully} keep track of at most a few parts of the entire ``state'', and must therefore be a ``light client'', downloading only a small amount of header data and not performing full verification checks, everywhere else - similarly to how existing Bitcoin clients like Electrum\cite{electrum} ensure security without downloading the full blockchain today. However, even still that node's economic resources must somehow be involved in ``attesting'' to the security of all transactions, including those that it does not even know about.
 
 Second, we need to be concerned not only with validity but also with data availability; it is entirely possible for a block to appear that looks valid, and is valid, but for which the auxiliary data is unavailable, leading to a situation where no other validator can effectively validate transactions or produce new blocks since the necessary data is unavailable to them. Finally, transactions must necessarily be processed by different nodes in parallel, and given that it is not possible to parallelize arbitrary computation \cite{parallelcomputing}, we must determine the set of restrictions to a state transition function that will best balance parallelizability and utility.
 
 This paper proposes another strategy for achieving scalability, as well as some formalisms that can be used when discussing and comparing scalable blockchain protocols. The strategy revolves around splitting transactions up into ``collations'' which affect a particular portion of the blockchain state, and then using a ``sample-and-fallback'' game to validate the headers of individual collations: in order for any particular collation to be valid, require it to be approved by a randomly selected sample of validators, and in case a bad collation does come through employ a mechanism in which a node can challenge invalid collations, reverting the harmful transactions and transferring the malfeasant validators' security deposit to the challengers as a reward unless the challenge is answered by a confirmation of validity from a much greater number of validators.
 
-Theoretically, under a Byzantine-fault-tolerant model of security, fallback is unnecessary; sampling only is sufficient. However, if we are operating in an anonymous-validator environment, then it is also considered desirable to have a hard economic guarantee of the minimum quantity of funds that needs to be destroyed in order to cause a certain level of damage to the network; in that case, in order to make the economic argument work we use fallback as a sort of incentivizer-of-last-resort, making cooperation the only subgame-perfect equilibrium.
+Theoretically, under a Byzantine-fault-tolerant model of security, fallback is unnecessary; sampling only is sufficient. However, if we are operating in an anonymous-validator environment, then it is also considered desirable to have a hard economic guarantee of the minimum quantity of funds that needs to be destroyed in order to cause a certain level of damage to the network; in that case, in order to make the economic argument work we use fallback as a sort of incentivizer-of-last-resort, making cooperation the only subgame-perfect equilibrium with a large margin of error.
 
 The particular advantage that our designs provide is a very high degree of generalization and abstraction. Although schemes using technologies like auditable computation through Merkle-tree computation traces\cite{versum} and micropayment channels\cite{lightning} exist for increasing efficiency in specific use cases like processing complex verifications and implementing currencies, our designs can be used to provide scalability for any underlying state transition function, provided that all state changes have a relatively ``localized'' impact (ie. a single transaction cannot change very large fractions of the state all at once). Our designs are also meant to be consensus-neutral, working equally well with proof of work, Tendermint-style\cite{tendermint} proof of stake, and even social-network consensus algorithms such the Stellar Consensus Protocol\cite{stellar} and Houwu Chen's simulated annealing algorithm\cite{chenhouwu}. Generality is achieved by splitting consensus into two levels, where the top-level consensus participants implement a state transition function that deals with root hashes of portions of the state and collation headers, while the bottom-level activity is involved in actually checking the validity of the underlying transactions.
 
@@ -162,7 +162,7 @@ The consensus algorithm will in most cases specify additional block validity con
 
 \begin{itemize}
 \item
-The \emph{updating process} consists of thousands of nodes around the world repeatedly attempting to produce blocks with powerful computers until some node finds one satisfying $sha256(\beta) < \frac{2^{256}}{D}$, where $D$ is a difficulty parameter that updates so as to ensure that a block is produced on average every ten minutes. Because $sha256$ is a pseudorandom hash function, there is no way to produce a valid block that is faster than simply trying different modifications to the block data until you eventually produce a block that passes, and this process on average collectively takes the whole network $D$ iterations.
+The \emph{updating process} consists of thousands of nodes around the world repeatedly attempting to produce blocks with powerful computers until some node finds one satisfying $sha256(\beta) < \frac{2^{256}}{D}$\cite{sha256}, where $D$ is a difficulty parameter that updates so as to ensure that a block is produced on average every ten minutes. Because $sha256$ is a pseudorandom hash function, there is no way to produce a valid block that is faster than simply trying different modifications to the block data until you eventually produce a block that passes, and this process on average collectively takes the whole network $D$ iterations.
 \item
 The \emph{fork choice rule} consists of choosing the blockchain that has the highest \emph{total difficulty}, \ie the greatest amount of statistically expected computational work placed into building the whole chain.
 \item
@@ -181,7 +181,7 @@ Note that in this case, the updating process and the block validity conditions a
 A \emph{weight function} is a mapping $U \rightarrow x \in [0,1]$ where $U$ is a user, such that the sum of the weights of all users equals to 1. Essentially, the weight of a user is their ``share of the vote'' in some voting process.
 \end{defn}
 
-In traditional Byzantine fault tolerance literature, guarantees are usually phrased in the form ``this algorithm works unless at least $\frac{1}{3}$ of nodes (in this paper we use the word ``node'' interchangeably with ``user'') fail or act incorrectly; here, we are assuming an open and decentralized protocol so creating a node is trivial, and so our Byzantine fault tolerance guarantees will be phrased in the form ``this algorithm works unless at least \emph{$\frac{1}{3}$ of all weight} fails or acts incorrectly''.
+In traditional Byzantine fault tolerance literature, guarantees are usually phrased in the form ``this algorithm works unless at least $\frac{1}{3}$ of nodes (in this paper we use the word ``node'' interchangeably with ``user'') fail or act incorrectly''; here, we are assuming an open and decentralized protocol so creating a node is trivial, and so our Byzantine fault tolerance guarantees will be phrased in the form ``this algorithm works unless at least \emph{$\frac{1}{3}$ of all weight} fails or acts incorrectly''.
 
 We define the emsemble of (i) a block-level state transition function and (ii) a consensus algorithm as \emph{a cryptoeconomic state machine}. A cryptoeconomic state machine can be viewed as a kind of decentralized simulation of a server, maintaining the state of one or more applications and updating it in discrete steps. Desired properties for a cryptoeconomic state machine include:
 
@@ -204,7 +204,7 @@ We define the emsemble of (i) a block-level state transition function and (ii) a
 
 Under economic security, we are allowed to assume that, whatever consensus algorithm we use (as long as it's nontrivial), there exists some small constant $w_a$ such that $w_a$ of all weight is altruistic, but we assume that the set of attackers, and the budget of attackers, is larger than the set and budget of altruists (\eg attackers can have weight up to $\frac{1}{3}$, altruists will have at least $\frac{1}{12}$). Note that the introduction of economic limitations does allow us to have somewhat weaker guarantees in some circumstances: for example, if 5\% of the weight is capable of mounting a medium-duration denial of service attack, then that may be acceptable as long as the attack is expensive and the attackers eventually run out of money.
 
-The purpose of economic security is to essentially provide another kind of ``safety margin'', showing that the economic incentives of the protocol work even if there are any kind of arbitrary unforeseen social factors, bribes by attackers or other incentives affecting the participants, provided that these factors are not too large. Although literal ``bribes'' as often referred to in this paper may often be unrealistic, a protocol where users succumb to small bribes will also necessarily be a protocol where users have little disincentive to secure themselves against bing hacked, not use poorly written software that takes shortcuts (eg. signing blocks without even validating them), etc.
+The purpose of economic security is to essentially provide another kind of ``safety margin'', showing that the economic incentives of the protocol work even if there are any kind of arbitrary unforeseen social factors, bribes by attackers or other incentives affecting the participants, provided that these factors are not too large. Although literal ``bribes'' as often referred to in this paper may often be unrealistic, a protocol where users succumb to small bribes will also necessarily be a protocol where users have little disincentive to secure themselves against being hacked, not use poorly written software that takes shortcuts (eg. signing blocks without even validating them), etc.
 
 A key reason why complete security and not just economic security is necessary is because actors can not only be bribed (or otherwise rewarded), but also threatened. Giving someone a \$1 million incentive as a bribe will necessarily actually cost \$1 million to the supplier of the incentive; however, given the ability to threaten individuals whether through social/reputational blackmail, legal force or physical coercion in real life, one can potentially provide a threat so grave that the victim will be willing to forgo \$1 million in order to avoid the adverse consequence at a much lower cost than \$1 million; formally, we can say that when threats are allowed, the cost of inflicting a disincentive on an actor of size $X$ is \emph{sublinear} in $X$. To get around this problem, we stipulate that not only must the total size of incentives plus disincentives provided by an attacker sum up to $b * L$, but they must also be spread out among a maximally large set of individuals.
 
@@ -248,58 +248,10 @@ Ultimately, the observed area is incomputable; to see why, note that a state tra
 
 The concept of ``area'' is a key component our mechanism for collating transactions and parallelizing execution across the entire network; it allows transactions to be broken up into groups that can be processed at once by a few nodes that happen to fully possess that particular set of subspaces. If two transaction lists have completely disjoint areas, then we know that they can be computed in parallel. Technically, there is an even weaker condition that is sufficient for parallelizability: the \emph{affected area} of each transaction must be disjoint with the (total) \emph{area} of the other. Two observed areas intersecting with each other is not an issue. We will take advantage of this insofar as all transactions are aware of the header chain, but will otherwise employ the stronger criterion for establishing parallel evaluability for simplicity - although we note that such a loss of information is necessarily wasteful.
 
-\begin{defn}[Sampling function]
-A \emph{sampling function} is a function $\SAMPLE(W, k, m) \rightarrow {u_1 ... u_m}$ that takes a weight function $W$, a seed $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users.
-\end{defn}
-
-\begin{exmp}
-Arrange all users $u_1 ... u_n$ in order of public key, and assign the range $[\sum_{i=1}^{j-1} W(u_i)...\sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 <= j <= n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
-\end{exmp}
-
-\begin{defn}[Merkle tree]
-A Merkle tree\cite{merkle} is a mechanism for hashing a large piece of data, which in its most general form works as follows:
-\begin{itemize}
-\item
-Use a partition function to split the data into chunks $D[1] ... D[n]$, such that each $D[i]$ has a very small size. Let us define this collection as $L_0(D)$.
-\item
-To determine $L_{i+1}(D)$ (starting from $i = 0$), split $L_i(D)$ into collections of fixed size (\eg 2-16 items) using some deterministic algorithm, and return as $L_{i+1}(D)$ the set of the hashes of the collections. Because there are fewer collections than elements (as each collection has more than one element), the size of $L_{i+1}(D)$ will be less than the size of $L(D)$
-\item
-Eventually, this leads to some $L_k(D)$ which has only one element. We call this the \emph{root} of the tree.
-\end{itemize}
-\end{defn}
-
-In a standard Merkle tree, the ``collections'' are always made up of two adjacent elements, \eg if the original data has 32 elements, then $L_1(D)$ is made up of $H(D[1] + D[2])$, $H(D[3] + D[4])$, etc, then $L_2(D)$ is made of up $H(L_1(D)[0] + L_1(D)[1])$, $H(L_1(D)[2] + L_1(D)[3])$, etc. In a Merkle Patricia tree\cite{mpt} used in Ripple and Ethereum, the structure is somewhat more complicated, but with the benefit of greater flexibility in the case where elements are added or deleted from the partition. We are interested in Merkle trees because they can be used to implement two particular very powerful primitives:
-
-\begin{defn}[Root function]
-A \emph{root function} is a mapping $R(\sigma) = i \in D$ where $D$ is some domain, usually $\{0,1\}^{256}$, which is computationally infeasible to invert (ie. preimage-resistant) and collision resistant, and which also has the property that given a small change to $\sigma$ (\ie changes which have a small affected area according to some partition function), one can very quickly evaluate the new root, even if $\sigma$ is very large.
-\end{defn}
-
-\begin{defn}[Merkle proof protocol]
-A \emph{Merkle proof protocol} is a scheme consisting of two functions:
-\begin{itemize}
-\item
-$PROVE(\sigma, i) \rightarrow \pi$, taking as inputs a state $\sigma$ and an index $i$ and providing an output $\pi$, a ``proof'' showing that $\sigma[i]$ is indeed a part of $\sigma$
-\item
-$VERIFY(\rho, i, \pi, V) \rightarrow \{0, 1\}$, taking as input a state root $\rho$, an index $i$, a proof $\pi$ and a candidate value $V$. The function should only return 1 if $\pi$ is a proof showing that $V = \sigma[i]$ for some $\sigma$ such that $R(\sigma) = \rho$.
-\end{itemize}
-$PROVE$ and $VERIFY$ should both take logarithmic time.
-\end{defn}
-
-\begin{defn}[Merkle branch]
-A \emph{Merkle branch} is the tuple $(V, \pi)$.
-\end{defn}
-
-\begin{note}
-The above two mechanisms are interesting to us for two reasons. First, root functions prove a quickly updateable ``compact representation'' of a potentially very large piece of data; they are key in building our compact homomorphism for scalable blockchains. Second, Merkle proofs allow us to use this compact representation, in collaboration with the network supplying data, to securely determine any particular part of the underlying data that we may want to access.
-\end{note}
+The next concept that will be crucial to our design is randomized sampling. The concept of taking a random sample of $m$ validator nodes out of a much larger set of $n$ nodes should be highly intuitive; however, we will still describe the algorithms involved formally for the sake of completeness.
 
 \begin{defn}[Cryptoeconomically secure entropy source]
-A cryptoeconomically secure entropy source is a protocol inside of a state transition function in a cryptoeconomic state machine that maintains an internal, regularly changing, value $v \in D$ for some domain $D$ (usually $\{0,1\}^{256}$) with the following desired properties:
-\begin{itemize}
-\item \emph{Unpredictablity}: there exists a value $M$ such that at time $t_0 + M$ the probability distribution of $v$ conditional only on information available at time $t_0$ is statistically indistinguishable from the random distribution. That is, an agent with only information available at time $t_0$ cannot determine a value $x$ such that $v = x$ with probability that is not in the range $[\frac{1 - \epsilon}{|D|}, \frac{1 + \epsilon}{|D|}]$ for cryptographically negligible $\epsilon$.
-\item \emph{Upward uninfluenceability (I)}: For any predicate $P$ which the value $v$ would have at some given future time with probability $p$ assuming everyone correctly follows the specified protocol, the cost of making the value have that predicate with probability $p' > p$ is bounded below by $b * L * (p' - p)$ where $b$ is a constant independent of $P$ and $L$ is some economic metric of activity in the state machine.
-\item \emph{Upward uninfluenceability (II)}: There exist constants $k$ and $b$ such that for any predicate $P$ which the value $v$ would have at some given future time with probability $p$ assuming everyone honestly follows the protocol, an actor controlling less than $k$ of the weight can increase the probability to at most $p' = p * (1 + b)$.
-\end{itemize}
+A cryptoeconomically secure entropy source is a function that provides a value $E(\sigma)$, taking the current state of a blockchain and outputting a pseudorandom value. Desired properties include (i) unpredictability and (ii) uninfluenceability, ie. it should be economically expensive to have \emph{any} predictable influence on the result (formally, we can say that if there is a predicate $P$ such that normally $P(E(\sigma))$ is true with probability $k$, it should not be possible to increase the probability that $P(E(\sigma))$ to $2 * k$ without paying a cost proportional to the cost needed to successfully attack the network (eg. via a 51\% attack).
 \end{defn}
 
 \begin{exmp}
@@ -312,95 +264,55 @@ $E(\sigma + \beta) = sha256(E(\sigma) + V(\beta))$ where $V(\beta)$ is the block
 \end{itemize}
 \end{exmp}
 
-\begin{assm}
-For any time internal $I$, there exists some fixed probability $p_o(I)$ such that a node randomly selected according to the weight function used to measure a cryptoeconomic state machine's Byzantine fault tolerance can be expected to be offline for at least the next $I$ seconds starting from any particular point in time with at least probability $p_o$.
-\end{assm}
+Manipulation is costly, essentially because the only way to manipulate the result is not to participate during a round during which you are eligible to propose a block, and this constitutes sacrificing a block reward. Other schemes include N-of-N commit-reveal schemes such as Tomlion's random-number generation protocol\cite{tomlion}, as well as simple proof of work.
 
-\begin{note}
-Combining the two uninfluenceability criteria into one (``it is impossible to increase the probability of $P$ from $p$ to $p * (1 + k)$ without expending at least $b * L * k$ resources'') is likely very difficult; it is hard to avoid having ways to cheaply multiply the probability of low-probability predicates by only acting when you are sure that your action will have an influence on the result. This is a limitation of many cryptoeconomically secure entropy sources that must be kept in mind when using them for applications (eg. it is particularly problematic for lotteries, and for this reason Tomlion's random-number generation protocol\cite{tomlion} is specifically designed to actually provide the combined uninfluenceability criterion at the cost of potentially taking an arbitrarily long number of rounds to terminate) but will not be an issue for our scheme specifically.
-\end{note}
-
-\begin{note}
-In practice, the second criterion is important for security, whereas the first criterion is important in order to avoid triggering superlinear returns on capital in systems where randomly selected stakeholders are rewarded.
-\end{note}
-
-\begin{lem}
-The NXT algorithm described above satisfies the conditions for being a cryptoeconomically secure entropy source.
-\end{lem}
-\begin{proof}
-To prove unpredictability, we note that the NXT blockchain produces a block every minute, and so the update $v \leftarrow sha256(v, V(\beta))$ takes place once a minute. During each round of updating, there is a probability $1 - p_o(60)$ that the primary signer will be online, and $p_o(60)$ that the signer will be offline and thus a secondary signer will need to produce the block. Hence, after $\frac{1}{-log(p_o(60))}$ blocks, there is a probability $p \approx \frac{1}{2}$ that the resulting value will be the ``default value'' obtained from updating $v$ with the primary signers' public keys at each block, and a $p \approx \frac{1}{2}$ probability that the resulting value will be different. We model 512 iterations of this process as a tree, with all leaves being probability distributions over sequences of 512 public keys of signers, where all probability distributions are disjoint (\ie no sequence appears with probability greater than zero in multiple leaves). By random-oracle assumption of $sha256$, we thus know that we have a set of $2^{512}$ independently randomly sampled probability distributions from $\{0,1\}^{256}$, and so each value will be selected an expected $\{0,1\}^{256}$ times, with standard deviation $2^{128}$. Hence, the probability distribution is statistically indistinguishable from a random distribution.
- 
-To show that the first uninfluenceability criterion holds true, note that the only way to manipulate the result is for the block proposer to disappear, leading to another proposer taking over. However, this action is costly for the proposer as the proposer loses a block reward. The optimal strategy is to disappear with probability $0 < q <= 1$ only when the predicate will be unsatisfied with the proposer participating but will be satisfied with the next proposer partipating; if a predicate has probability $p$ this entails disappearing $p * (1-p) * q$ of the time, meaning that the predicate will be satisfied $p + p * (1-p) * q$ of the time instead of $p$ of the time, a probability increment of $p * (1-p) * q$ will have a cost of $p * (1-p) * q * R$ if $R$ is the signing reward (whose real value is proportional to the quantity of transaction fees, a reasonable metric of economic activity). Hence, the uninfluenceability criterion holds true with $b = 1$.
-
-To show that the second uninfluenceability criterion holds true, note that when one is not the signer, one has no influence on the entropy, and when one is the signer one has the ability to not sign and instead defer to the next signer. Hence, an attacker controlling $\frac{1}{k}$ of all signing slots will be able to defer to the second signer $\frac{1}{k}$ of the time, to the third signer $\frac{1}{k^2}$ of the time (by being in the first two slots simultaneously), etc, so in total such an attacker will on average be able to choose between $1 + \frac{1}{k-1}$ values and thus multiply the probability of a desired predicate by a factor of $1 + \frac{1}{k-1}$. If the attacker controls $\frac{1}{3}$ of all signing slots, the result will thus be increasing the probablity by a factor of $\frac{3}{2}$.
-\end{proof}
-
-\begin{note}
-The above algorithm is only one of a class of algorithms that try to derive entropy from individual faults. There are also other approaches for deriving entropy, including $N-of-N$ commit-reveal protocols, relying on at least one of the participants to be altruistic and refuse to share their entropy with the other participants. It is an open problem to determine if one can come up with cryptoeconomically secure entropy sources cheaper than proof-of-work that rely purely on a rationality assumption.
-\end{note}
-
-\begin{note}
-The above algorithm is NOT \emph{downward-uninfluenceable}. If there is a predicate $P$ with low probability, then one can influence its probability down to $P * w_a$ by simply bribing all validators who would have created a block that changed the entropy value to something satisfying $P$ to instead sit their turn out and let the next validator make a block, almost certainly not triggering $P$. The $w_a$ multiplier comes from the fact that we are assuming a subset of ``altruistic'' validators that cannot be economically influenced or bribed. However, for predicates with medium probability, one can derive a certain degree of resistance to downward influence simply by applying the upward-uninfluenceability guarantees to $\neg P$.
-\end{note}
-
-\begin{defn}[zk-SNARK scheme]
-A zk-SNARK scheme is a tuple of three functions $G$, $P$, $V$, where:
-\begin{itemize}
-\item
-$G(prog) \rightarrow k$ generates a ``verification key'' from a program.
-\item
-$P(prog, I_s, I_p) \rightarrow \pi$ generates a proof that $prog(I_s, I_p)$ for some secret inputs $I_s$ and public inputs $I_p$ is equal to its actual output, $o$.
-\item
-$V(k, I_p, o, \pi) \rightarrow \{0, 1\}$ verifies a proof, accepting it only if $\pi$ is actually a proof that $prog(I_s, I_p) = o$ where $G(prog) = k$.
-\end{itemize}
-Essentially, it is a proof that you ran a particular computation with some particular inputs and got a particular result, such that the proof can be verified much more quickly than running the original computation. Additionally, to qualify as a \emph{zero-knowledge} ZNARK, $\pi$ should reveal no information about the value of $I_s$. Schemes exist \cite{snark} to perform $G$ and $P$ in a time equal to $O(N*log^k(N))$ for a small $k$ where $N$ is the number of execution steps, and $V$ can be computed in some cases in polylogarithmic time and in some cases in constant time.
-\end{defn}
-
-\begin{note}
-We provide algorithms which achieve scalability without zk-SNARKs, however we will show how zk-SNARKs can also be used in scalable blockchain protocols.
-\end{note}
-
-\begin{defn}[Decentralized oracle scheme]
-A decentralized oracle scheme is a mechanism which asks a set of participants to provide an answer to a subjective question (\eg ``what was the temperature in San Francisco on 2015 Jan 9?''), and attempts to incentivize the participants to answer correctly. The output of the mechanism is generally considered to be the majority answer, and as input the scheme usually requires an economic subsidy.
+\begin{defn}[Sampling function]
+A \emph{sampling function} is a function $\SAMPLE(W, k, m) \rightarrow {u_1 ... u_m}$ that takes a weight function $W$, a seed $k$ and a number $m$ and outputs a pseudorandomly selected (weighted by $W$) sample of $m$ users. The seed is typically generated by some external entropy source.
 \end{defn}
 
 \begin{exmp}
-A simple decentralized oracle scheme, called ``SchellingCoin'', has the following rules:
-\begin{itemize}
-\item
-Each of $N$ participants must vote either $1$ or $0$ on a question (a scalar-valued or multi-valued question is modeled as a series of binary questions).
-\item
-A participant whose vote aligns with the majority vote receives a reward of $P$.
-\item
-A participant whose vote does not align with the majority vote receives a reward of $0$.
-\end{itemize}
-SchellingCoin is vulnerable to zero-cost equilibrium flips, and so under a formal definition of economic security it cannot be viewed as having any security margin at all, though the difficulty of the inherent coordination problem may still allow the scheme to function in practice. An attacker with a budget greater than $P$ and the ability to credibly commit to providing a bribe under certain conditions in the future can, assuming rationality of the participants, effect an equilibrium flip toward a wrong answer at zero expected cost \cite{pepsilon}.
+Arrange all users $u_1 ... u_n$ in order of public key, and assign the range $[\sum_{i=1}^{j-1} W(u_i)...\sum_{i=1}^j W(u_i)]$ to user $u_j$ for all $1 <= j <= n$. For all $1 \le h \le m$, return the user whose range includes the value $\frac{H(k + h)}{2^{256}}$ for some hash function $H$.
 \end{exmp}
 
-\begin{note}
-There are two ways to make SchellingCoin-like protocols more powerful by increasing their security margin. The first involves a strategy of Sztorcian counter-coordination\cite{sztorc}, which attempts to naturally set the quantity of funds at stake in proportion to the level of controversy in the question; in the limit, people who do not vote alongside the majority answer lose their entire security deposit. The game-theoretic argument that Sztorc provides\cite{sztorc2} is that if a medium-sized bribe to vote incorrectly is offered, then voters will vote for the correct answer with some of their funds and for the incorrect answer with some of their funds, leading to an equilibrium where the majority of the voting power is still in favor of the correct answer but the users also manage to ``steal'' some of the bribe:
+\begin{defn}[Merkle tree]
+A Merkle tree\cite{merkle} is a mechanism for hashing a large piece of data, which in its most general form works as follows:
+\begin{itemize}
+\item
+Use a partition function to split the data into chunks $D[1] ... D[n]$, such that each $D[i]$ has a very small size. Let us define this collection as $L_0(D)$.
+\item
+To determine $L_i(D)$ for $i > 0$, split $L_{i-1}(D)$ into collections of fixed size (\eg 2-16 items) using some deterministic algorithm, and return as $L_i(D)$ the set of the hashes of the collections. Because there are fewer collections than elements (as each collection has more than one element), the size of $L_i(D)$ will be less than the size of $L_{i-1}(D)$
+\item
+Eventually, this leads to some $L_k(D)$ which has only one element. We call this the \emph{root} of the tree.
+\end{itemize}
+\end{defn}
 
 \begin{center}
-\includegraphics[width=165pt]{schellingcoin_payoff1.png}
-\includegraphics[width=165pt]{schellingcoin_payoff2.png}
+\includegraphics[width=190pt]{merkle.png}
 \end{center}
 
-This approach accepts that attackers with a budget even larger than the size of everyone's security deposits will be able to cause everyone to flip to voting incorrectly as an equilibrium, but advocates note that attackers that large will also be able to arbitrarily disrupt the underlying blockchain consensus (ie. conduct a 51\% attack) anyway.
+In a standard Merkle tree, the ``collections'' are always made up of two adjacent elements, \eg if the original data has 32 elements, then $L_1(D)$ is made up of $H(D[1] + D[2])$, $H(D[3] + D[4])$, etc, then $L_2(D)$ starts off with the node $H(H(D[1] + D[2]) + H(D[3] + D[4]))$, etc. In a Merkle Patricia tree\cite{mpt} used in Ripple and Ethereum, the structure is somewhat more complicated, but with the benefit of greater flexibility in the case where elements are added or deleted from the partition.
 
-The second is to fall back to ``subjective resolution'': if the majority of voters vote incorrectly, then it is up to \emph{the users} to simply reject that block as invalid and go along with the block that they see as correct. Software-based fork detection features can be used to alert users to the need to make a choice at a particular time. This reliance on human judgement at the last level makes the budget required for any kind of zero-cost ``equilibrium flip'' attack essentially infinite, instead requiring the attacker to bribe everyone outright and even then resulting in only a moderately large inconvenience for users, not a total failure. The process does impose inconveniences to users, but properly built designs that use decentralized oracle schemes will use the mechanism only as the last step of a fallback game in a similar function as nuclear deterrence; in practice it will almost never be used as attackers would not be willing to pay the high cost of forcing the system to reach such an extreme state. The security claim essentially becomes something like ``by paying \$100 million, an attacker has the ability to force users to visit their favorite internet forum and locate a 32-byte hash representing the new fork of the chain to switch to''.
-\end{note}
+We define a \emph{Merkle proof} as being a subset of nodes that can be used to prove the existence of a particular piece of data at some particular point in the Merkle tree. We construct such a proof by taking the node whose placement we want to prove, and then adding the chain of "siblings" and "ancestors" going all the way up to the root node:
 
-\begin{defn}[Distributed hash table]
-A distributed hash table is a mechanism which stores a potentially very large number of chunks of data on a decentralized network in order to allow network-connected nodes easy access to them. For our purposes, we are particularly interested in a \emph{verifiable decentralized data store} which gives network-connected nodes access to a function $\GET(\rho, i) \rightarrow (V, \pi)$ where $(V, \pi)$ is the Merkle branch of $\sigma[i]$ where $\rho = R(\sigma)$; however, given that Merkle tree protocols consist simply of repeated reverse-hash-lookup queries, this definition can easily be deduced from the more conventional definition of providing a function $\GET(h) \rightarrow x$ where $h = H(x)$ for some hash function.
-\end{defn}
+\begin{center}
+\includegraphics[width=190pt]{merkle2.png}
+\end{center}
+
+Given this proof, a verifier can check that the hashes are correct at each step along the chain, and thus that the node is in fact at the given position in the tree which has the given root hash. Mathematically, we can abstract this into three functions:
+
+\begin{itemize}
+\item
+$ROOT(\sigma) \rightarrow \rho$, taking as input a state $\sigma$ and outputting a root hash (usually 256 bits).
+\item
+$PROVE(\sigma, i) \rightarrow \pi$, taking as inputs a state $\sigma$ and an index $i$ and providing an output $\pi$, a ``proof'' showing that $\sigma[i]$ is indeed a part of $\sigma$
+\item
+$VERIFY(\rho, i, \pi, V) \rightarrow \{0, 1\}$, taking as input a state root $\rho$, an index $i$, a proof $\pi$ and a candidate value $V$. The function should only return 1 if $\pi$ is a proof showing that $V = \sigma[i]$ for some $\sigma$ such that $ROOT(\sigma) = \rho$.
+\end{itemize}
 
 \begin{note}
-$\GET$ should work with overwhelmingly high probability provided that (i) $(V, \pi)$ has at least once been in the hands of at least one altruist, and (ii) the total quantity of data stored in the DHT is at most $\frac{N * n}{k}$ where $N$ is the computational and data storage capacity of a node, $n$ is the number of nodes and $k$ is a constant. We will generally assume that there is an upper bound on the average number of nodes interested in a particular subspace, and so in the rest of this document we will simply assume that the DHT works.
+The above two mechanisms are interesting to us for two reasons. First, root functions prove a quickly updateable ``compact representation'' of a potentially very large piece of data; they are key in building our compact homomorphism for scalable blockchains. Second, Merkle proofs allow us to use this compact representation, in collaboration with the network supplying data, to securely determine any particular part of the underlying data that we may want to access.
 \end{note}
 
-\begin{exmp}
-Kademlia \cite{kademlia} (\eg as implemented in BitTorrent) is an example of a distributed hash table. A more direct implementation of our desired formalism with Merkle branches will be available from IPFS \cite{ipfs}.
-\end{exmp}
 
 \section{Global Variables and Assumptions}
 
@@ -450,7 +362,7 @@ The underlying top-level consensus prevents censorship of transactions in the lo
 
 Now, let us define the core part of our scheme. As described in a previous section, the mechanism can most simply be formally described as using any underlying consensus algorithm to keep track not of the state, but of a compact homomorphism (``top level'') of the state, and then building separate (``bottom-level'') machinery to collaboratively ensure that the underlying state transitions are legitimate.
 
-The basic mechanism is this. Suppose that $\sigma$ is partitioned using some partition function into $n$ parts. If $\sigma$ is partitioned into a map $\{i: \sigma[i]\}$, we define $\psi$ as the map $\{i: R(\sigma[i])\}$. We assume the existence of a coarse-grained partition function as well as the existence of a fine-grained partition function which converts $\sigma[i]$ into a map $\{j: \sigma[i][j]\}$, where each $\sigma[i][j]$ is constant-size (\eg an account). We then define an object called a \emph{transaction collation}, which consists of three components:
+The basic mechanism is this. Suppose that $\sigma$ is partitioned using some partition function into $n$ parts. If $\sigma$ is partitioned into $\{i: \sigma[i]\}$, we define $\psi = \{i: R(\sigma[i])\}$. We assume the existence of a coarse-grained partition function as well as the existence of a fine-grained partition function which converts $\sigma[i]$ into a map $\{j: \sigma[i][j]\}$, where each $\sigma[i][j]$ is constant-size (\eg an account). We then define an object called a \emph{transaction collation}, which consists of three components:
 
 \begin{itemize}
 \item
@@ -473,7 +385,7 @@ $D$, the set of Merkle branches for the observed area of $T$ on $\sigma$ on the 
 
 We also add to the top-level state $\psi$ a pool of validators $V(\psi)$. In order to achieve economic security, we will later recommend that these validators hold security deposits, but if super-protocol social mechanisms (eg. an expectation that consensus participants will collude in order to kick out uncooperative validators) are allowed to play a dominant regulatory role then some security can be achieved under the weaker condition that the validators have persistent identities, and if the only goal is Byzantine fault tolerance and not economic security then all that matters is that it is hard to become a validator and there are many of them. Ideally, top-level consensus participants (\eg Tendermint stakeholders, miners) and validators would be the same group.
 
-Additionally, we add a cryptoeconomically secure entropy source, $E(\psi)$. Finally, we select some sample function, and we define $\VALIDATORS(H, \psi) = \SAMPLE(W, E(\psi) + AP, m)$, selecting $m$ random validators for the collation using the entropy source $E$ and the previous state root set $AP$, as a source of entropy (we need additional entropy alongside $E$ so as to ensure that different collations have different validator pools, and $AP$ is used (in sorted order) because modifying it is expensive: removing a state root requires throwing away transactions, and adding a state root requires taking up space, making the entity including the transaction have to pay the opportunity cost of including another collation in that spot). An alternative is to simply use a small amount of proof of work (eg. 1\% of the validator reward) as the secondary source of randomness, as proof of work results cannot be effectively computed in advance and once a solution is found it is expensive to forgo; this will also help decrease the number of collations to a manageable quantity.
+Finally, we use some source of in-blockchain randomness to select $m$ random validators; formally, we say $\VALIDATORS(H, \psi) = \SAMPLE(W, E(\psi) + AP, m)$ where $W$ is some weight function using entropy source $E$ with the state $\psi$ as input. The purpose of adding ``AP'' into the calculation is to make sure that different collations are processed by different sets of validators; an alternative is to either use proof of work, or the address of the collator (which would need to be registered in some way); both of the latter schemes have the benefit that they also naturally limit the number of collations that get produced.
 
 When a collation is passed around the network, the entire ensemble $\kappa = (T, H, D)$ is included. From the point of view of the top-level consensus, however, only $H$ exists, and $H$ ends up playing the role of a ``transaction'' from the top-level consensus's point of view. For the purposes of defining $\APPLY'$, the top-level state transition function, we say that a collation header $H$ is valid in the context of $\psi$ if and only if the following are all true:
 
@@ -530,9 +442,7 @@ Where $\PE(n, k, p)$ is the probability of an event that occurs with probability
 
 We note that $\PGE(135, 90, \frac{1}{3}) = 2^{-48.37}$, so 135 nodes will suffice for a $k = \frac{1}{3}$ fault tolerance. If we are willing to lower to $k = \frac{1}{5}$, then $\PGE(39, 31, \frac{1}{5}) = 2^{-48.58}$, so 39 nodes will be sufficient. Additionally, note that if we want greater efficiency under normal circumstances, then a bimodal scheme where either 44 out of a particular 50 nodes ($\PGE(50, 44, \frac{1}{3}) = 2^{-49.22}$) or 90 out of a particular 135 nodes is a sufficient validity condition will allow the cheaper but equally safe condition to work in the (usual) case where there are almost no malicious nodes, nearly everyone is online and the network is not under attack, and fall back to the more robust but bulkier validation rule under tougher conditions. In order to provide equal guarantees under post-quantum conditions (\ie Grover's algorithm), then the constants will likely need to be doubled in order to attain equal security margins, although for now we will stick to concerning ourselves with the classical case.
 
-Additionally, note that the combinatoric formula is only valid if the entropy used to determine validator sets is \emph{actually} random, or at least close enough for our purposes. For this, our second uninfluenceability criterion, stipulating that an attacker with less than $\frac{1}{3}$ of all validators will be able to influence it by at most a reasonably small linear amount (in the NXT case, by a factor of $\frac{3}{2}$), is crucial, showing that with such a powerful attacker the probability of a successful attack remains below $2^{-47.4}$. The first uninfluenceability criterion is important in order to avoid excessive superlinear returns (ie. validators increasing their profit margins by centralizing or colluding) resulting from super-block proposers manipulating the entropy in order to increase the chance that their validators will be involved in verifying blocks, but does not affect security.
-
-To see the role of the unpredictability criterion, note that the protocol as described here provides \emph{ex ante} Byzantine fault-tolerance, but not \emph{ex post} Byzantine fault tolerance; \emph{after} the validators are selected, only that small fixed number of validators acting maliciously will compromise the system. If entropy becomes unpredictable very slowly (or never at all), then the algorithm is only Byzantine fault-tolerant against faults very far in advance, leading to potential practical vulnerabilities like an attacker locating the 135 validators that will be validating their block one year from now and taking the time to locate and hack into 90 of them.
+It is important for the entropy source to \emph{actually} be both unpredictable and uninfluenceable. If the entropy source was predictable, then an attacker could corrupt a set of nodes well ahead of time before creating a bad collation that the validators would sign off on, and so the scheme would be no better than simply having a fixed set of validators per subspace. If the entropy source is influenceable, then powerful actors could secure for themselves a quadratic advantage by spending money both on validators and on influencing the random number source to favor their validators more. The NXT entropy source described in the previous section sufficiently satisfies both these properties.
 
 \begin{lem}
 The above protocol is almost-quadratically scalable, in the sense that it does not require any individual to perform more than $O(N)$ work even if the total transaction load is $O(N^{2-\epsilon})$.
@@ -817,8 +727,8 @@ The scheme makes minimal compromises to security, scalability or interoperabilit
 \bibitem{zamfir}
     Vlad Zamfir's Formalizing Decentralized Consensus, coming soon.
 
-\bibitem{piketty}
-    Thomas Piketty, Capital in the 21st Century: \url{http://www.amazon.com/Capital-Twenty-First-Century-Thomas-Piketty/dp/1491534656}
+\bibitem{sha256}
+    In reality, $H(x) = SHA256(SHA256(x))$ is used, but one can think of it as being $SHA256$ for convenience.
 
 \bibitem{bar}
     BAR Fault Tolerance for Cooperative Services, Amitanand S. Aiyer et al: \url{http://cs.brown.edu/courses/csci2950-g/papers/bar.pdf}

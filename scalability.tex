@@ -215,7 +215,7 @@ The goal of this document can be summarized as follows: given a state $\sigma$ a
 Before we get to describing our approach, there are a few more fundamental primitives that we need to describe.
 
 \begin{defn}[Partitioning scheme]
-A \emph{partitioning scheme} is a way of representing a state as a collection of ``subspaces''; formally, we can see it as a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 ... \sigma_n)$ for a fixed $n$ (in practice, protocols will need to adjust $n$ to maintain appropriate balance of effort at multiple levels of transaction volume; however we will start off with fixed $n$ to simplify the discussion for expository purposes, and will then discuss mechanisms for adjusting $n$ in a ater section). An individual value $\sigma[i]$ will be called a \emph{state subspace}, and a value $i$ will be called a \emph{subspace index}.
+A \emph{partitioning scheme} is a way of representing a state as a collection of ``subspaces''; formally, we can see it as a bijective function $P$ which maps possible values of $\sigma$ to a tuple $(\sigma_1, \sigma_2 ... \sigma_n)$ for a fixed $n$ (in practice, protocols will need to adjust $n$ to maintain appropriate balance of effort at multiple levels of transaction volume; however we will start off with fixed $n$ to simplify the discussion for expository purposes, and will then discuss mechanisms for adjusting $n$ in a later section). An individual value $\sigma[i]$ will be called a \emph{state subspace}, and a value $i$ will be called a \emph{subspace index}.
 \end{defn}
 
 We can visually see a partitioning scheme as follows:
@@ -510,7 +510,7 @@ The problem here is this: whereas in the case of invalid collations, the validit
 Although it may seem like data availability is less serious a problem than invalidity, we will provide a series of attacks to show that the ability to push through in some cases even valid unavailable collations can be a death knell to a working blockchain system:
 
 \begin{exmp}[Unprovable theft attack]
-An attacker creates a block with transactions $T_1$ ... $T_n$, where $T_1$ ... $T_{n-1}$ are legitimate and applied properly but $T_n$ is an invalid transaction which seems to transfer \$1 million from an arbitrary wealthy user to the attacker. The attacker makes $T_1$ ... $T_{n-1}$ available, and makes the final state available, but does not make $T_n$ available. Once the state is confirmed by a sufficient number of future blocks, the attacker than spends the \$1 million to purchase other untraceable digital assets.
+An attacker creates a block with transactions $T_1$ ... $T_n$, where $T_1$ ... $T_{n-1}$ are legitimate and applied properly but $T_n$ is an invalid transaction which seems to transfer \$1 million from an arbitrary wealthy user to the attacker. The attacker makes $T_1$ ... $T_{n-1}$ available, and makes the final state available, but does not make $T_n$ available. Once the state is confirmed by a sufficient number of future blocks, the attacker then spends the \$1 million to purchase other untraceable digital assets.
 
 Here, note that there is no way to prove invalidity, because theoretically $T_n$ very easily \emph{could be} a transaction legitimately transferring \$1 million from the millionaire to the attacker, but the unavailability of the data prevents the network from making the judgement.
 \end{exmp}
